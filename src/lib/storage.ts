@@ -48,3 +48,25 @@ export function incrementLessons(): void {
 export function clearProfile(): void {
   localStorage.removeItem(KEY);
 }
+
+const CHAT_KEY = 'mentora_chat_history';
+
+export function getChatHistory(): Array<{ role: 'user' | 'assistant'; content: string }> {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(CHAT_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveChatHistory(messages: Array<{ role: 'user' | 'assistant'; content: string }>): void {
+  // Keep last 100 messages to avoid filling up storage
+  const trimmed = messages.slice(-100);
+  localStorage.setItem(CHAT_KEY, JSON.stringify(trimmed));
+}
+
+export function clearChatHistory(): void {
+  localStorage.removeItem(CHAT_KEY);
+}

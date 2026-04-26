@@ -1,6 +1,7 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import { ChatMessage, StudentProfile } from '@/lib/types';
+import { getChatHistory, saveChatHistory, clearChatHistory } from '@/lib/storage';
 
 interface Props {
   profile: StudentProfile;
@@ -17,14 +18,28 @@ export default function SocraticChat({ profile, lessonContent, isOpen, onClose }
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // Load history from localStorage on first open
+  useEffect(() => {
+    if (isOpen && messages.length === 0) {
+      const history = getChatHistory();
+      if (history.length > 0) setMessages(history);
+    }
+  }, [isOpen]);
+
+  // Save to localStorage whenever messages change
+  useEffect(() => {
+    if (messages.length > 0) saveChatHistory(messages);
+  }, [messages]);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, isOpen]);
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || loading) return;
     const userMsg: ChatMessage = { role: 'user', content: text };
-    setMessages((prev) => [...prev, userMsg]);
+    const updated = [...messages, userMsg];
+    setMessages(updated);
     setInput('');
     setLoading(true);
 
@@ -35,7 +50,7 @@ export default function SocraticChat({ profile, lessonContent, isOpen, onClose }
         body: JSON.stringify({
           profile,
           lessonContent,
-          chatHistory: messages,
+          chatHistory: updated.slice(-10), // send last 10 messages as context
           message: text,
         }),
       });
@@ -49,6 +64,11 @@ export default function SocraticChat({ profile, lessonContent, isOpen, onClose }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleClear = () => {
+    clearChatHistory();
+    setMessages([]);
   };
 
   if (!isOpen) return null;
@@ -67,6 +87,14 @@ export default function SocraticChat({ profile, lessonContent, isOpen, onClose }
           <p className="font-semibold text-white leading-none">Mentora</p>
           <p className="text-xs text-gray-500 mt-0.5">AI-наставник</p>
         </div>
+        {messages.length > 0 && (
+          <button
+            onClick={handleClear}
+            className="text-xs text-gray-600 border border-surface-border rounded-lg px-3 py-1.5"
+          >
+            Очистить
+          </button>
+        )}
         {loading && (
           <div className="flex gap-1">
             {[0, 150, 300].map((d) => (
