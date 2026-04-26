@@ -19,10 +19,12 @@ export async function POST(request: NextRequest) {
     const content = message.content[0];
     if (content.type !== 'text') throw new Error('Unexpected response type');
 
-    const passage = JSON.parse(content.text);
+    const match = content.text.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('No JSON in response');
+    const passage = JSON.parse(match[0]);
     return NextResponse.json({ passage });
   } catch (error) {
     console.error('Reading error:', error);
-    return NextResponse.json({ error: 'Failed to generate reading' }, { status: 500 });
+    return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 }

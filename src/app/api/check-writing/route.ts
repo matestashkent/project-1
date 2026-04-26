@@ -23,10 +23,12 @@ export async function POST(request: NextRequest) {
     const content = message.content[0];
     if (content.type !== 'text') throw new Error('Unexpected response type');
 
-    const feedback = JSON.parse(content.text);
+    const match = content.text.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('No JSON in response');
+    const feedback = JSON.parse(match[0]);
     return NextResponse.json({ feedback });
   } catch (error) {
     console.error('Writing check error:', error);
-    return NextResponse.json({ error: 'Failed to check writing' }, { status: 500 });
+    return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 }
