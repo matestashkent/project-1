@@ -5,10 +5,15 @@ import Link from 'next/link';
 import { getProfile } from '@/lib/storage';
 import { StudentProfile } from '@/lib/types';
 import BottomNav from '@/components/BottomNav';
+import SocraticChat from '@/components/SocraticChat';
+
+const GENERAL_CONTEXT = `This is a general IELTS tutoring session.
+The student can ask anything about IELTS: writing strategies, reading tips, grammar, vocabulary, exam techniques, score improvement advice, or any other IELTS-related questions.`;
 
 export default function DashboardPage() {
   const router = useRouter();
   const [profile, setProfile] = useState<StudentProfile | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
 
   useEffect(() => {
     const p = getProfile();
@@ -84,8 +89,25 @@ export default function DashboardPage() {
         ))}
       </div>
 
+      {/* AI Mentor button */}
+      <div className="px-5 mb-5">
+        <button
+          onClick={() => setChatOpen(true)}
+          className="w-full bg-gold/10 border border-gold/30 rounded-2xl p-4 flex items-center gap-4 active:scale-[0.98] transition-transform"
+        >
+          <div className="w-12 h-12 bg-gold/20 rounded-xl flex items-center justify-center flex-shrink-0">
+            <span className="text-2xl">🎓</span>
+          </div>
+          <div className="flex-1 text-left">
+            <p className="text-gold font-semibold">Спроси Mentora</p>
+            <p className="text-gray-400 text-sm mt-0.5">Задай любой вопрос по IELTS</p>
+          </div>
+          <span className="text-gold text-xl">›</span>
+        </button>
+      </div>
+
       {/* Daily goal */}
-      <div className="px-5 mb-6">
+      <div className="px-5 mb-5">
         <div className="bg-gold/8 border border-gold/20 rounded-xl p-4 flex items-center gap-3">
           <span className="text-2xl">⚡</span>
           <div>
@@ -97,7 +119,7 @@ export default function DashboardPage() {
 
       {/* Modules */}
       <div className="px-5 space-y-3">
-        <p className="text-white font-semibold text-sm text-gray-400 uppercase tracking-wide text-xs">Модули</p>
+        <p className="text-gray-400 uppercase tracking-wide text-xs">Модули</p>
         {modules.map((mod) => (
           <Link key={mod.href} href={mod.href}>
             <div
@@ -115,6 +137,14 @@ export default function DashboardPage() {
           </Link>
         ))}
       </div>
+
+      {/* Mentora Chat */}
+      <SocraticChat
+        profile={profile}
+        lessonContent={GENERAL_CONTEXT}
+        isOpen={chatOpen}
+        onClose={() => setChatOpen(false)}
+      />
 
       <BottomNav />
     </div>
