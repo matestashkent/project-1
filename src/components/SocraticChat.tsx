@@ -64,7 +64,7 @@ export default function SocraticChat({ profile, lessonContent, isOpen, onClose }
           ←
         </button>
         <div className="flex-1">
-          <p className="font-semibold text-white leading-none">Устоз</p>
+          <p className="font-semibold text-white leading-none">Mentora</p>
           <p className="text-xs text-gray-500 mt-0.5">AI-наставник</p>
         </div>
         {loading && (

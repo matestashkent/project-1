@@ -150,7 +150,7 @@ export default function LessonPage() {
           className="bg-surface-card border border-gold/60 text-gold font-semibold py-3 px-6 rounded-2xl shadow-lg flex items-center gap-2 active:scale-95 transition-transform"
         >
           <span>🎓</span>
-          <span>Спроси Устоза</span>
+          <span>Спроси Mentora</span>
         </button>
       </div>
 

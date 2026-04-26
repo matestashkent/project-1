@@ -6,7 +6,7 @@ import TelegramInit from "@/components/TelegramInit";
 const inter = Inter({ subsets: ["latin", "cyrillic"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "Устоз — AI IELTS Репетитор",
+  title: "Mentora AI — IELTS Репетитор",
   description: "Персональный AI-репетитор по IELTS в Telegram",
 };
 

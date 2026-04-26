@@ -2,7 +2,7 @@ import { StudentProfile } from './types';
 
 export function buildSystemPrompt(profile: StudentProfile): string {
   const lang = profile.language === 'uz' ? 'Uzbek' : 'Russian';
-  return `You are Устоз (Ustad), a strict but supportive IELTS tutor AI.
+  return `You are Mentora, a strict but supportive IELTS tutor AI.
 Student: ${profile.name}, Level: ${profile.level}, Target Band: ${profile.targetBand}.
 Language: Always respond in ${lang} unless the student writes in a different language.
 Rules: Never inflate scores. Use Central Asia/Uzbekistan-relevant examples. Be concise and direct.`;
@@ -108,7 +108,7 @@ export function buildChatPrompt(
   profile: StudentProfile
 ): string {
   const history = chatHistory
-    .map(m => `${m.role === 'user' ? 'Student' : 'Устоз'}: ${m.content}`)
+    .map(m => `${m.role === 'user' ? 'Student' : 'Mentora'}: ${m.content}`)
     .join('\n');
 
   return `The student is studying this lesson:

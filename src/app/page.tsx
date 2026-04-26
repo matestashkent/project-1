@@ -85,7 +85,7 @@ export default function OnboardingPage() {
               <span className="text-4xl">🎓</span>
             </div>
             <div>
-              <h1 className="text-4xl font-bold text-gold">Устоз</h1>
+              <h1 className="text-4xl font-bold text-gold">Mentora AI</h1>
               <p className="text-gray-400 mt-1">AI IELTS Репетитор</p>
             </div>
             <p className="text-white text-base leading-relaxed">
