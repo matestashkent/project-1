@@ -11,12 +11,22 @@ export async function GET(req: NextRequest) {
     const user = await prisma.user.findUnique({
       where: { telegramId: BigInt(telegramId) },
       include: {
-        essays: { orderBy: { createdAt: 'asc' }, select: { overallBand: true, createdAt: true } },
+        essays: {
+          orderBy: { createdAt: 'asc' },
+          select: { id: true, taskType: true, overallBand: true, createdAt: true },
+        },
         subscriptions: { where: { status: 'active' }, orderBy: { expiresAt: 'desc' }, take: 1 },
       },
     });
 
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+
+    const task1Count = user.essays.filter(e => e.taskType === 'task1').length;
+    const task2Count = user.essays.filter(e => e.taskType === 'task2').length;
+    const recentEssays = [...user.essays]
+      .reverse()
+      .slice(0, 5)
+      .map(e => ({ id: e.id, taskType: e.taskType, band: e.overallBand, date: e.createdAt }));
 
     return NextResponse.json({
       user: {
@@ -24,6 +34,9 @@ export async function GET(req: NextRequest) {
         telegramId: user.telegramId.toString(),
         writingBands: user.essays.map(e => ({ band: e.overallBand, date: e.createdAt })),
         subscription: user.subscriptions[0] ?? null,
+        task1Count,
+        task2Count,
+        recentEssays,
       },
     });
   } catch (err) {
