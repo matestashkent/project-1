@@ -95,6 +95,14 @@ export default function DashboardPage() {
       border: 'border-emerald-500/30',
     },
     {
+      href: '/vocabulary',
+      icon: '📝',
+      title: 'Vocabulary',
+      sub: '80+ IELTS слов с примерами',
+      grad: 'from-teal-500/15 to-cyan-500/15',
+      border: 'border-teal-500/30',
+    },
+    {
       href: '/listening',
       icon: '🎧',
       title: 'Listening Practice',
