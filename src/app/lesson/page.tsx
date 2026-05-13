@@ -14,6 +14,9 @@ export default function LessonPage() {
   const [error, setError] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [taskRevealed, setTaskRevealed] = useState(false);
+  const [taskAnswer, setTaskAnswer] = useState('');
+  const [taskFeedback, setTaskFeedback] = useState<string | null>(null);
+  const [taskChecking, setTaskChecking] = useState(false);
 
   useEffect(() => {
     const p = getProfile();
@@ -22,10 +25,35 @@ export default function LessonPage() {
     loadLesson(p);
   }, [router]);
 
+  const checkTaskAnswer = async () => {
+    if (!profile || !lesson || !taskAnswer.trim() || taskChecking) return;
+    setTaskChecking(true);
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          profile,
+          lessonContent: lessonText,
+          chatHistory: [],
+          message: `Задание было: "${lesson.task}"\n\nМой ответ: "${taskAnswer.trim()}"\n\nОцени мой ответ: что сделано правильно, что улучшить, дай конкретный совет.`,
+        }),
+      });
+      const data = await res.json();
+      setTaskFeedback(data.reply);
+    } catch {
+      setTaskFeedback('Не удалось проверить ответ. Попробуй ещё раз.');
+    } finally {
+      setTaskChecking(false);
+    }
+  };
+
   const loadLesson = async (p: StudentProfile) => {
     setLoading(true);
     setError(false);
     setTaskRevealed(false);
+    setTaskAnswer('');
+    setTaskFeedback(null);
     try {
       const res = await fetch('/api/lesson', {
         method: 'POST',
@@ -135,11 +163,51 @@ export default function LessonPage() {
         </div>
       ) : (
         <div className="mx-5 space-y-3">
+          {/* Task description */}
           <div className="bg-violet-500/8 border border-violet-500/25 rounded-xl p-4">
             <p className="text-violet-400 text-xs font-bold mb-2 uppercase tracking-wide">📝 Задание</p>
             <p className="text-white text-sm leading-relaxed">{lesson.task}</p>
-            <p className="text-gray-500 text-xs mt-3">Выполни и спроси Устоза если непонятно ↓</p>
           </div>
+
+          {/* Answer input */}
+          {!taskFeedback ? (
+            <>
+              <textarea
+                value={taskAnswer}
+                onChange={(e) => setTaskAnswer(e.target.value)}
+                placeholder="Напиши свой ответ здесь..."
+                className="w-full h-36 bg-surface-card border border-surface-border rounded-xl p-4 text-white text-sm leading-relaxed outline-none focus:border-violet-400 transition-colors resize-none"
+              />
+              <button
+                onClick={checkTaskAnswer}
+                disabled={!taskAnswer.trim() || taskChecking}
+                className="w-full py-4 bg-violet-500 text-white font-bold rounded-2xl text-base disabled:opacity-30 active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+              >
+                {taskChecking ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Проверяю...
+                  </>
+                ) : (
+                  'Проверить ответ →'
+                )}
+              </button>
+            </>
+          ) : (
+            <>
+              {/* Feedback */}
+              <div className="bg-surface-card border border-violet-500/30 rounded-xl p-4">
+                <p className="text-violet-400 text-xs font-bold mb-2 uppercase tracking-wide">Фидбек Mentora</p>
+                <p className="text-white text-sm leading-relaxed whitespace-pre-wrap">{taskFeedback}</p>
+              </div>
+              <button
+                onClick={() => profile && loadLesson(profile)}
+                className="w-full py-4 bg-gold text-surface font-bold rounded-2xl text-base active:scale-[0.98] transition-transform"
+              >
+                Следующий урок →
+              </button>
+            </>
+          )}
         </div>
       )}
 
