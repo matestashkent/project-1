@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { buildSystemPrompt, buildWritingCheckPrompt } from '@/lib/prompts';
 import { StudentProfile } from '@/lib/types';
+import { prisma } from '@/lib/db';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -26,6 +27,33 @@ export async function POST(request: NextRequest) {
     const match = content.text.match(/\{[\s\S]*\}/);
     if (!match) throw new Error('No JSON in response');
     const feedback = JSON.parse(match[0]);
+
+    // Save essay result to database if user has telegramId
+    const telegramId = request.headers.get('x-telegram-id');
+    if (telegramId) {
+      const user = await prisma.user.findUnique({ where: { telegramId: BigInt(telegramId) } });
+      if (user) {
+        await prisma.essay.create({
+          data: {
+            userId: user.id,
+            prompt,
+            text: essay,
+            taScore: feedback.taskAchievement.band,
+            ccScore: feedback.coherenceCohesion.band,
+            lrScore: feedback.lexicalResource.band,
+            graScore: feedback.grammaticalRange.band,
+            overallBand: feedback.overallBand,
+            feedback: JSON.stringify(feedback),
+            topTip: feedback.topTip,
+          },
+        });
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { writingSubmissions: { increment: 1 }, currentBand: feedback.overallBand },
+        });
+      }
+    }
+
     return NextResponse.json({ feedback });
   } catch (error) {
     console.error('Writing check error:', error);

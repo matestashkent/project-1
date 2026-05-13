@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                 String         @id @default(cuid())
+  telegramId         BigInt         @unique
+  name               String
+  language           String         @default("ru")
+  level              String         @default("B1-B2")
+  currentBand        Float          @default(0)
+  targetBand         Float          @default(6.5)
+  examIn             String         @default("flexible")
+  studyMinutes       Int            @default(30)
+  weakAreas          String[]       @default([])
+  streak             Int            @default(0)
+  lastActive         DateTime       @default(now())
+  lessonsCompleted   Int            @default(0)
+  writingSubmissions Int            @default(0)
+  mockExamsCompleted Int            @default(0)
+  organizationId     String?
+  createdAt          DateTime       @default(now())
+  essays             Essay[]
+  sessions           Session[]
+  subscriptions      Subscription[]
+}
+
+model Essay {
+  id          String   @id @default(cuid())
+  userId      String
+  taskType    String   @default("task2")
+  prompt      String
+  text        String
+  taScore     Float
+  ccScore     Float
+  lrScore     Float
+  graScore    Float
+  overallBand Float
+  feedback    String
+  topTip      String?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model Session {
+  id          String   @id @default(cuid())
+  userId      String
+  module      String
+  lessonTopic String?
+  status      String   @default("completed")
+  score       Float?
+  examType    String   @default("ielts")
+  completedAt DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model Subscription {
+  id        String   @id @default(cuid())
+  userId    String
+  plan      String
+  status    String   @default("active")
+  startedAt DateTime @default(now())
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id])
+}
