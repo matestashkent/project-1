@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { sendMessage, answerCallbackQuery, inlineKeyboard, miniAppButton } from '@/lib/telegram';
 
+export const dynamic = 'force-dynamic';
+
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.railway.app';
 
 // In-memory onboarding sessions (works fine on Railway, one server)

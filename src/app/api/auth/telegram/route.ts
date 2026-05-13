@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createHmac } from 'crypto';
 import { prisma } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 function verifyTelegramData(initData: string, botToken: string): Record<string, string> | null {
   const params = new URLSearchParams(initData);
   const hash = params.get('hash');
