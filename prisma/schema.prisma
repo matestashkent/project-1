@@ -62,6 +62,19 @@ model Session {
   user User @relation(fields: [userId], references: [id])
 }
 
+model ListeningCache {
+  id        String   @id @default(cuid())
+  level     String
+  topic     String
+  title     String
+  passage   String
+  questions Json
+  audioUrl  String?
+  createdAt DateTime @default(now())
+
+  @@index([level, topic])
+}
+
 model Subscription {
   id        String   @id @default(cuid())
   userId    String

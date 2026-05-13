@@ -13,6 +13,7 @@ export default function ListeningPage() {
   const { user } = useUser();
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [data, setData] = useState<ListeningData | null>(null);
+  const [cacheId, setCacheId] = useState<string | null>(null);
   const [stage, setStage] = useState<Stage>('loading');
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [showPassage, setShowPassage] = useState(false);
@@ -40,6 +41,7 @@ export default function ListeningPage() {
     setShowPassage(false);
     setScore(null);
     setAudioUrl(null);
+    setCacheId(null);
 
     const activeProfile = p || {
       name: user?.name || 'Student',
@@ -67,6 +69,13 @@ export default function ListeningPage() {
       });
       const result = await res.json();
       setData(result.listening);
+      setCacheId(result.listening.id || null);
+
+      // If cached audio URL already exists — set it directly
+      if (result.audioUrl) {
+        setAudioUrl(result.audioUrl);
+      }
+
       setStage('ready');
     } catch {
       alert('Не удалось загрузить задание. Попробуй ещё раз.');
@@ -74,47 +83,42 @@ export default function ListeningPage() {
     }
   };
 
-  const generateAudio = async (passage: string): Promise<string | null> => {
+  const fetchAndPlayAudio = async () => {
+    if (!data) return;
+
+    // If we already have the audio URL — just play
+    if (audioUrl) {
+      playUrl(audioUrl);
+      setStage('playing');
+      return;
+    }
+
+    setStage('playing');
     setAudioLoading(true);
+
     try {
       const res = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: passage }),
+        body: JSON.stringify({ text: data.passage, cacheId }),
       });
       if (!res.ok) throw new Error('TTS failed');
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      setAudioUrl(url);
-      return url;
+      const result = await res.json();
+      setAudioUrl(result.audioUrl);
+      playUrl(result.audioUrl);
     } catch (e) {
       console.error('TTS error:', e);
-      return null;
+      alert('Не удалось загрузить аудио. Попробуй ещё раз.');
+      setStage('ready');
     } finally {
       setAudioLoading(false);
     }
   };
 
-  const playAudio = async () => {
-    if (!data) return;
-
-    let url = audioUrl;
-    if (!url) {
-      setStage('playing');
-      url = await generateAudio(data.passage);
-      if (!url) {
-        alert('Не удалось загрузить аудио. Попробуй ещё раз.');
-        setStage('ready');
-        return;
-      }
-    }
-
-    setStage('playing');
-
+  const playUrl = (url: string) => {
     if (audioRef.current) {
       audioRef.current.pause();
     }
-
     const audio = new Audio(url);
     audioRef.current = audio;
     audio.onended = () => setStage('questions');
@@ -130,12 +134,8 @@ export default function ListeningPage() {
   };
 
   const replayAudio = () => {
-    if (!audioRef.current || !audioUrl) return;
-    audioRef.current.pause();
-    const audio = new Audio(audioUrl);
-    audioRef.current = audio;
-    audio.onended = () => {};
-    audio.play();
+    if (!audioUrl) return;
+    playUrl(audioUrl);
   };
 
   const selectAnswer = (questionId: number, option: string) => {
@@ -161,7 +161,7 @@ export default function ListeningPage() {
           <span className="text-4xl">🎧</span>
         </div>
         <div className="text-center">
-          <p className="text-white text-lg font-semibold">Генерирую задание...</p>
+          <p className="text-white text-lg font-semibold">Загружаю задание...</p>
           <p className="text-gray-500 text-sm mt-1">Подготавливаю задание по Listening</p>
         </div>
         <div className="flex gap-2">
@@ -180,6 +180,9 @@ export default function ListeningPage() {
       <div className="px-5 pt-10 pb-4">
         <p className="text-gray-500 text-xs uppercase tracking-wide">IELTS Listening</p>
         <h1 className="text-xl font-bold text-white mt-1">{data.title}</h1>
+        {audioUrl && (
+          <p className="text-emerald-400 text-xs mt-1">✓ Аудио готово</p>
+        )}
       </div>
 
       {/* READY */}
@@ -208,18 +211,10 @@ export default function ListeningPage() {
           </div>
 
           <button
-            onClick={playAudio}
-            disabled={audioLoading}
-            className="w-full py-5 bg-gold text-surface font-bold rounded-2xl text-lg active:scale-[0.98] transition-transform flex items-center justify-center gap-3 disabled:opacity-60"
+            onClick={fetchAndPlayAudio}
+            className="w-full py-5 bg-gold text-surface font-bold rounded-2xl text-lg active:scale-[0.98] transition-transform flex items-center justify-center gap-3"
           >
-            {audioLoading ? (
-              <>
-                <span className="w-5 h-5 border-2 border-surface/30 border-t-surface rounded-full animate-spin" />
-                Загружаю аудио...
-              </>
-            ) : (
-              <><span>▶</span> Воспроизвести</>
-            )}
+            <span>▶</span> {audioUrl ? 'Воспроизвести' : 'Воспроизвести'}
           </button>
 
           <button
@@ -371,13 +366,14 @@ export default function ListeningPage() {
             </div>
           )}
 
-          <button
-            onClick={() => replayAudio()}
-            disabled={!audioUrl}
-            className="w-full py-3 bg-surface-card border border-surface-border text-gray-400 text-sm font-medium rounded-xl active:scale-[0.98] disabled:opacity-40"
-          >
-            🔊 Прослушать ещё раз
-          </button>
+          {audioUrl && (
+            <button
+              onClick={replayAudio}
+              className="w-full py-3 bg-surface-card border border-surface-border text-gray-400 text-sm font-medium rounded-xl active:scale-[0.98]"
+            >
+              🔊 Прослушать ещё раз
+            </button>
+          )}
 
           <button
             onClick={() => profile && loadListening(profile)}

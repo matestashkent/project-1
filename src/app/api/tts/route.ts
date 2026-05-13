@@ -1,13 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { uploadAudioToR2 } from '@/lib/r2';
+import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    const { text } = (await request.json()) as { text: string };
+    const { text, cacheId } = (await request.json()) as { text: string; cacheId?: string };
 
     if (!text || text.trim().length === 0) {
       return NextResponse.json({ error: 'No text provided' }, { status: 400 });
+    }
+
+    // If cacheId given and audio already exists — return cached URL
+    if (cacheId) {
+      const existing = await prisma.listeningCache.findUnique({
+        where: { id: cacheId },
+        select: { audioUrl: true },
+      });
+      if (existing?.audioUrl) {
+        return NextResponse.json({ audioUrl: existing.audioUrl, fromCache: true });
+      }
     }
 
     const apiKey = process.env.ELEVENLABS_API_KEY;
@@ -17,6 +30,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'ElevenLabs not configured' }, { status: 500 });
     }
 
+    // Generate audio with ElevenLabs
     const response = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
       {
@@ -46,14 +60,19 @@ export async function POST(request: NextRequest) {
 
     const audioBuffer = await response.arrayBuffer();
 
-    return new NextResponse(audioBuffer, {
-      status: 200,
-      headers: {
-        'Content-Type': 'audio/mpeg',
-        'Content-Length': audioBuffer.byteLength.toString(),
-        'Cache-Control': 'no-store',
-      },
-    });
+    // Upload to R2
+    const key = `listening/${cacheId || Date.now()}.mp3`;
+    const audioUrl = await uploadAudioToR2(key, audioBuffer);
+
+    // Update DB cache entry with audio URL
+    if (cacheId) {
+      await prisma.listeningCache.update({
+        where: { id: cacheId },
+        data: { audioUrl },
+      });
+    }
+
+    return NextResponse.json({ audioUrl, fromCache: false });
   } catch (error) {
     console.error('TTS route error:', error);
     return NextResponse.json({ error: String(error) }, { status: 500 });
