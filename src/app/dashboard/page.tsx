@@ -71,6 +71,14 @@ export default function DashboardPage() {
       border: 'border-violet-500/30',
     },
     {
+      href: '/writing/task1',
+      icon: '📊',
+      title: 'Writing Task 1',
+      sub: 'Опиши графики и диаграммы',
+      grad: 'from-sky-500/15 to-blue-500/15',
+      border: 'border-sky-500/30',
+    },
+    {
       href: '/writing',
       icon: '✍️',
       title: 'Writing Task 2',
