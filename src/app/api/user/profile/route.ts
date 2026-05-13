@@ -55,7 +55,7 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { name, language, level, targetBand, examIn, studyMinutes, weakAreas } = body;
+    const { name, language, level, targetBand, examIn, studyMinutes, weakAreas, incrementLessons } = body;
 
     const user = await prisma.user.update({
       where: { telegramId: BigInt(telegramId) },
@@ -67,6 +67,7 @@ export async function PUT(req: NextRequest) {
         ...(examIn && { examIn: String(examIn) }),
         ...(studyMinutes && { studyMinutes: Number(studyMinutes) }),
         ...(weakAreas && { weakAreas }),
+        ...(incrementLessons && { lessonsCompleted: { increment: 1 } }),
         lastActive: new Date(),
       },
     });

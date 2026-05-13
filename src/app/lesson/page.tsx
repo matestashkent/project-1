@@ -75,6 +75,13 @@ export default function LessonPage() {
   const handleComplete = () => {
     incrementLessons();
     setTaskRevealed(true);
+    if (token) {
+      fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ incrementLessons: true }),
+      }).catch(() => {});
+    }
   };
 
   const lessonText = lesson

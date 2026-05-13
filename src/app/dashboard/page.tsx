@@ -58,9 +58,14 @@ const SKILLS = [
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, loading } = useUser();
+  const { user, loading, refreshUser } = useUser();
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
+
+  useEffect(() => {
+    refreshUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (loading) return;
