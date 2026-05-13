@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { uploadAudioToR2 } from '@/lib/r2';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 

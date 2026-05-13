@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { buildSystemPrompt, buildListeningPrompt } from '@/lib/prompts';
 import { StudentProfile } from '@/lib/types';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
