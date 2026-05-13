@@ -238,13 +238,13 @@ export default function ProgressPage() {
         </div>
       )}
 
-      {/* Reset cache */}
-      <div className="mx-5 mt-2">
+      {/* Settings */}
+      <div className="mx-5 mt-2 mb-2">
         <button
           onClick={handleReset}
-          className="w-full py-3 bg-surface-card border border-surface-border text-gray-600 text-sm rounded-xl active:scale-[0.98] transition-transform"
+          className="w-full py-3 bg-surface-card border border-surface-border text-gray-600 text-xs rounded-xl active:scale-[0.98] transition-transform"
         >
-          Сбросить кэш
+          Сбросить локальные данные
         </button>
       </div>
 

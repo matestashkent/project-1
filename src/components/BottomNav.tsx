@@ -6,7 +6,7 @@ const NAV = [
   { href: '/dashboard', icon: '🏠', label: 'Главная' },
   { href: '/lesson', icon: '📚', label: 'Урок' },
   { href: '/writing', icon: '✍️', label: 'Writing' },
-  { href: '/reading', icon: '📖', label: 'Reading' },
+  { href: '/listening', icon: '🎧', label: 'Listening' },
   { href: '/progress', icon: '📊', label: 'Прогресс' },
 ];
 
@@ -17,7 +17,7 @@ export default function BottomNav() {
     <nav className="fixed bottom-0 left-0 right-0 bg-surface-card border-t border-surface-border z-40 safe-area-pb">
       <div className="flex items-center justify-around h-16 px-1">
         {NAV.map((item) => {
-          const active = pathname === item.href;
+          const active = pathname === item.href || pathname.startsWith(item.href + '/');
           return (
             <Link
               key={item.href}

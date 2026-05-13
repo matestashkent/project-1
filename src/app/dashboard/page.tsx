@@ -11,6 +11,51 @@ import { useUser } from '@/lib/userContext';
 const GENERAL_CONTEXT = `This is a general IELTS tutoring session.
 The student can ask anything about IELTS: writing strategies, reading tips, grammar, vocabulary, exam techniques, score improvement advice, or any other IELTS-related questions.`;
 
+const SKILLS = [
+  {
+    href: '/writing',
+    icon: '✍️',
+    title: 'Writing Task 2',
+    sub: 'Эссе + AI оценка',
+    color: 'from-gold/15 to-amber-500/10 border-gold/30',
+  },
+  {
+    href: '/writing/task1',
+    icon: '📊',
+    title: 'Writing Task 1',
+    sub: 'Графики и диаграммы',
+    color: 'from-sky-500/15 to-blue-500/10 border-sky-500/30',
+  },
+  {
+    href: '/reading',
+    icon: '📖',
+    title: 'Reading',
+    sub: 'True / False / NG',
+    color: 'from-emerald-500/15 to-teal-500/10 border-emerald-500/30',
+  },
+  {
+    href: '/listening',
+    icon: '🎧',
+    title: 'Listening',
+    sub: 'Слушай и отвечай',
+    color: 'from-purple-500/15 to-violet-500/10 border-purple-500/30',
+  },
+  {
+    href: '/speaking',
+    icon: '🗣️',
+    title: 'Speaking',
+    sub: 'Монолог + фидбек',
+    color: 'from-rose-500/15 to-pink-500/10 border-rose-500/30',
+  },
+  {
+    href: '/vocabulary',
+    icon: '📝',
+    title: 'Vocabulary',
+    sub: '80+ IELTS слов',
+    color: 'from-teal-500/15 to-cyan-500/10 border-teal-500/30',
+  },
+];
+
 export default function DashboardPage() {
   const router = useRouter();
   const { user, loading } = useUser();
@@ -19,7 +64,6 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (loading) return;
-    // Prefer DB user, fall back to localStorage
     if (user && user.weakAreas.length > 0) {
       setProfile({
         name: user.name,
@@ -40,7 +84,6 @@ export default function DashboardPage() {
       });
       return;
     }
-    // localStorage fallback
     const p = getProfile();
     if (!p) { router.replace('/'); return; }
     setProfile(p);
@@ -56,152 +99,83 @@ export default function DashboardPage() {
 
   const lastBand = profile.writingBands.length > 0
     ? profile.writingBands[profile.writingBands.length - 1].band.toFixed(1)
-    : '—';
+    : null;
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Доброе утро' : hour < 17 ? 'Добрый день' : 'Добрый вечер';
 
-  const modules = [
-    {
-      href: '/lesson',
-      icon: '📚',
-      title: 'Урок дня',
-      sub: 'Персональный AI-урок',
-      grad: 'from-violet-500/15 to-blue-500/15',
-      border: 'border-violet-500/30',
-    },
-    {
-      href: '/writing/task1',
-      icon: '📊',
-      title: 'Writing Task 1',
-      sub: 'Опиши графики и диаграммы',
-      grad: 'from-sky-500/15 to-blue-500/15',
-      border: 'border-sky-500/30',
-    },
-    {
-      href: '/writing',
-      icon: '✍️',
-      title: 'Writing Task 2',
-      sub: 'Напиши эссе и получи фидбек',
-      grad: 'from-gold/15 to-amber-500/15',
-      border: 'border-gold/30',
-    },
-    {
-      href: '/reading',
-      icon: '📖',
-      title: 'Reading Practice',
-      sub: 'True / False / Not Given',
-      grad: 'from-emerald-500/15 to-teal-500/15',
-      border: 'border-emerald-500/30',
-    },
-    {
-      href: '/vocabulary',
-      icon: '📝',
-      title: 'Vocabulary',
-      sub: '80+ IELTS слов с примерами',
-      grad: 'from-teal-500/15 to-cyan-500/15',
-      border: 'border-teal-500/30',
-    },
-    {
-      href: '/listening',
-      icon: '🎧',
-      title: 'Listening Practice',
-      sub: 'Слушай и отвечай на вопросы',
-      grad: 'from-purple-500/15 to-violet-500/15',
-      border: 'border-purple-500/30',
-    },
-    {
-      href: '/speaking',
-      icon: '🗣️',
-      title: 'Speaking Practice',
-      sub: 'Говори и получи оценку AI',
-      grad: 'from-rose-500/15 to-pink-500/15',
-      border: 'border-rose-500/30',
-    },
-    {
-      href: '/exam',
-      icon: '📝',
-      title: 'Mock Exam',
-      sub: 'Симуляционный экзамен',
-      grad: 'from-orange-500/15 to-red-500/15',
-      border: 'border-orange-500/30',
-    },
-  ];
-
   return (
     <div className="min-h-screen bg-surface pb-24">
       {/* Header */}
-      <div className="px-5 pt-10 pb-5">
+      <div className="px-5 pt-10 pb-4">
         <p className="text-gray-500 text-sm">{greeting},</p>
-        <h1 className="text-2xl font-bold text-white mt-0.5">{profile.name} 👋</h1>
-        <p className="text-gray-600 text-sm mt-1">Цель: IELTS Band {profile.targetBand}</p>
+        <h1 className="text-2xl font-bold text-white mt-0.5">{profile.name}</h1>
+        <p className="text-gray-600 text-sm mt-0.5">Цель: IELTS Band {profile.targetBand} · {profile.level}</p>
       </div>
 
-      {/* Stats */}
-      <div className="px-5 grid grid-cols-4 gap-2 mb-6">
+      {/* Stats row */}
+      <div className="px-5 flex gap-2 mb-5 overflow-x-auto pb-1 scrollbar-none">
         {[
-          { label: 'Уроков', value: profile.lessonsCompleted },
-          { label: 'Эссе', value: profile.writingSubmissions },
-          { label: 'Балл', value: lastBand },
-          { label: 'Дней', value: profile.streak },
+          { label: '🔥 Дней', value: profile.streak },
+          { label: '📚 Уроков', value: profile.lessonsCompleted },
+          { label: '✍️ Эссе', value: profile.writingSubmissions },
+          ...(lastBand ? [{ label: '⭐ Балл', value: lastBand }] : []),
         ].map((s) => (
-          <div key={s.label} className="bg-surface-card border border-surface-border rounded-xl p-3 text-center">
-            <p className="text-gold text-lg font-bold leading-none">{s.value}</p>
-            <p className="text-gray-500 text-[10px] mt-1">{s.label}</p>
+          <div key={s.label} className="bg-surface-card border border-surface-border rounded-xl px-4 py-3 text-center flex-shrink-0">
+            <p className="text-gold text-xl font-bold leading-none">{s.value}</p>
+            <p className="text-gray-500 text-[11px] mt-1 whitespace-nowrap">{s.label}</p>
           </div>
         ))}
       </div>
 
-      {/* AI Mentor button */}
+      {/* Featured: Lesson */}
       <div className="px-5 mb-5">
-        <button
-          onClick={() => setChatOpen(true)}
-          className="w-full bg-gold/10 border border-gold/30 rounded-2xl p-4 flex items-center gap-4 active:scale-[0.98] transition-transform"
-        >
-          <div className="w-12 h-12 bg-gold/20 rounded-xl flex items-center justify-center flex-shrink-0">
-            <span className="text-2xl">🎓</span>
+        <Link href="/lesson">
+          <div className="bg-gradient-to-r from-violet-500/20 to-blue-500/15 border border-violet-500/40 rounded-2xl p-5 flex items-center gap-4 active:scale-[0.98] transition-transform">
+            <div className="w-14 h-14 bg-violet-500/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+              <span className="text-3xl">📚</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-violet-300 text-xs font-bold uppercase tracking-wide mb-1">Начни отсюда</p>
+              <p className="text-white font-bold text-lg leading-tight">Урок дня</p>
+              <p className="text-gray-400 text-sm mt-0.5">Персональный AI-урок · 10 минут</p>
+            </div>
+            <span className="text-violet-400 text-2xl">›</span>
           </div>
-          <div className="flex-1 text-left">
-            <p className="text-gold font-semibold">Спроси Mentora</p>
-            <p className="text-gray-400 text-sm mt-0.5">Задай любой вопрос по IELTS</p>
-          </div>
-          <span className="text-gold text-xl">›</span>
-        </button>
+        </Link>
       </div>
 
-      {/* Daily goal */}
+      {/* Skills grid */}
       <div className="px-5 mb-5">
-        <div className="bg-gold/8 border border-gold/20 rounded-xl p-4 flex items-center gap-3">
-          <span className="text-2xl">⚡</span>
-          <div>
-            <p className="text-white text-sm font-semibold">Цель дня: {profile.studyMinutes} минут</p>
-            <p className="text-gray-500 text-xs mt-0.5">Начни с урока — это займёт 10 минут</p>
-          </div>
+        <p className="text-gray-500 text-xs uppercase tracking-wide font-bold mb-3">Практика IELTS</p>
+        <div className="grid grid-cols-2 gap-3">
+          {SKILLS.map((skill) => (
+            <Link key={skill.href} href={skill.href}>
+              <div className={`bg-gradient-to-br ${skill.color} border rounded-2xl p-4 active:scale-[0.97] transition-transform h-full`}>
+                <span className="text-2xl mb-2 block">{skill.icon}</span>
+                <p className="text-white font-semibold text-sm leading-tight">{skill.title}</p>
+                <p className="text-gray-400 text-xs mt-1">{skill.sub}</p>
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
 
-      {/* Modules */}
-      <div className="px-5 space-y-3">
-        <p className="text-gray-400 uppercase tracking-wide text-xs">Модули</p>
-        {modules.map((mod) => (
-          <Link key={mod.href} href={mod.href}>
-            <div
-              className={`bg-gradient-to-r ${mod.grad} border ${mod.border} rounded-2xl p-4 flex items-center gap-4 active:scale-[0.98] transition-transform`}
-            >
-              <div className="w-12 h-12 bg-surface/50 rounded-xl flex items-center justify-center flex-shrink-0">
-                <span className="text-2xl">{mod.icon}</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-white font-semibold">{mod.title}</p>
-                <p className="text-gray-400 text-sm mt-0.5">{mod.sub}</p>
-              </div>
-              <span className="text-gray-500 text-xl">›</span>
-            </div>
-          </Link>
-        ))}
+      {/* Ask Mentora */}
+      <div className="px-5 mb-2">
+        <button
+          onClick={() => setChatOpen(true)}
+          className="w-full bg-surface-card border border-surface-border rounded-2xl px-4 py-3 flex items-center gap-3 active:scale-[0.98] transition-transform"
+        >
+          <span className="text-xl">🎓</span>
+          <div className="flex-1 text-left">
+            <p className="text-gray-300 font-medium text-sm">Спроси Mentora</p>
+            <p className="text-gray-600 text-xs">Любой вопрос по IELTS</p>
+          </div>
+          <span className="text-gray-500 text-lg">›</span>
+        </button>
       </div>
 
-      {/* Mentora Chat */}
       <SocraticChat
         profile={profile}
         lessonContent={GENERAL_CONTEXT}
