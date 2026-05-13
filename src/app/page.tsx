@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getProfile, saveProfile } from '@/lib/storage';
 import { StudentProfile, WeakArea } from '@/lib/types';
+import { useUser } from '@/lib/userContext';
 
 type Step = 'welcome' | 'name' | 'level' | 'band' | 'examDate' | 'studyTime' | 'weakAreas' | 'creating';
 
@@ -10,6 +11,7 @@ const STEPS: Step[] = ['welcome', 'name', 'level', 'band', 'examDate', 'studyTim
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { user, telegramId, loading } = useUser();
   const [step, setStep] = useState<Step>('welcome');
   const [form, setForm] = useState({
     name: '',
@@ -21,8 +23,14 @@ export default function OnboardingPage() {
   });
 
   useEffect(() => {
-    if (getProfile()) router.replace('/dashboard');
-  }, [router]);
+    if (loading) return;
+    // DB user with complete profile → skip onboarding
+    if (user && user.weakAreas.length > 0) { router.replace('/dashboard'); return; }
+    // localStorage fallback
+    if (getProfile()) { router.replace('/dashboard'); return; }
+    // Pre-fill name from Telegram
+    if (user?.name) setForm(f => ({ ...f, name: user.name }));
+  }, [user, loading, router]);
 
   const next = () => {
     const idx = STEPS.indexOf(step);
@@ -38,7 +46,8 @@ export default function OnboardingPage() {
     }));
   };
 
-  const createProfile = () => {
+  const createProfile = async () => {
+    const weakAreas: WeakArea[] = form.weakAreas.length > 0 ? form.weakAreas : ['writing', 'reading'];
     const profile: StudentProfile = {
       name: form.name,
       language: 'ru',
@@ -46,7 +55,7 @@ export default function OnboardingPage() {
       targetBand: form.targetBand,
       examIn: form.examIn,
       studyMinutes: form.studyMinutes,
-      weakAreas: form.weakAreas.length > 0 ? form.weakAreas : ['writing', 'reading'],
+      weakAreas,
       createdAt: new Date().toISOString(),
       lastActive: new Date().toISOString(),
       streak: 1,
@@ -56,13 +65,30 @@ export default function OnboardingPage() {
       writingBands: [],
       readingScores: [],
     };
+    // Save to localStorage as cache
     saveProfile(profile);
     setStep('creating');
+    // Save to DB if authenticated via Telegram
+    if (telegramId) {
+      try {
+        await fetch('/api/user/profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'x-telegram-id': telegramId },
+          body: JSON.stringify({ name: form.name, level: form.level, targetBand: form.targetBand, examIn: form.examIn, studyMinutes: form.studyMinutes, weakAreas }),
+        });
+      } catch {}
+    }
     setTimeout(() => router.replace('/dashboard'), 2200);
   };
 
   const stepIndex = STEPS.indexOf(step);
   const progressPct = stepIndex > 0 && stepIndex < STEPS.length - 1 ? (stepIndex / (STEPS.length - 2)) * 100 : 0;
+
+  if (loading) return (
+    <div className="min-h-screen bg-surface flex items-center justify-center">
+      <div className="w-12 h-12 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-surface flex flex-col">

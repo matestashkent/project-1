@@ -6,20 +6,51 @@ import { getProfile } from '@/lib/storage';
 import { StudentProfile } from '@/lib/types';
 import BottomNav from '@/components/BottomNav';
 import SocraticChat from '@/components/SocraticChat';
+import { useUser } from '@/lib/userContext';
 
 const GENERAL_CONTEXT = `This is a general IELTS tutoring session.
 The student can ask anything about IELTS: writing strategies, reading tips, grammar, vocabulary, exam techniques, score improvement advice, or any other IELTS-related questions.`;
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { user, loading } = useUser();
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
 
   useEffect(() => {
+    if (loading) return;
+    // Prefer DB user, fall back to localStorage
+    if (user && user.weakAreas.length > 0) {
+      setProfile({
+        name: user.name,
+        language: user.language as StudentProfile['language'],
+        level: user.level as StudentProfile['level'],
+        targetBand: user.targetBand,
+        examIn: user.examIn,
+        studyMinutes: user.studyMinutes,
+        weakAreas: user.weakAreas as StudentProfile['weakAreas'],
+        createdAt: new Date().toISOString(),
+        lastActive: new Date().toISOString(),
+        streak: user.streak,
+        lessonsCompleted: user.lessonsCompleted,
+        writingSubmissions: user.writingSubmissions,
+        mockExamsCompleted: user.mockExamsCompleted,
+        writingBands: user.writingBands.map(b => ({ date: typeof b.date === 'string' ? b.date : new Date(b.date).toISOString(), band: b.band })),
+        readingScores: [],
+      });
+      return;
+    }
+    // localStorage fallback
     const p = getProfile();
     if (!p) { router.replace('/'); return; }
     setProfile(p);
-  }, [router]);
+  }, [user, loading, router]);
+
+  if (loading) return (
+    <div className="min-h-screen bg-surface flex items-center justify-center">
+      <div className="w-12 h-12 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+    </div>
+  );
 
   if (!profile) return null;
 

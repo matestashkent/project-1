@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import TelegramInit from "@/components/TelegramInit";
+import Providers from "@/components/Providers";
 
 const inter = Inter({ subsets: ["latin", "cyrillic"], variable: "--font-inter" });
 
@@ -20,7 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={`${inter.variable} font-sans bg-surface text-white`}>
         <TelegramInit />
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
