@@ -75,6 +75,31 @@ model ListeningCache {
   @@index([level, topic])
 }
 
+model LessonCache {
+  id           String   @id @default(cuid())
+  level        String
+  topic        String
+  whyImportant String
+  explanation  String
+  goodExample  String
+  badExample   String
+  task         String
+  createdAt    DateTime @default(now())
+
+  @@index([level])
+}
+
+model ReadingCache {
+  id        String   @id @default(cuid())
+  level     String
+  title     String
+  text      String
+  questions Json
+  createdAt DateTime @default(now())
+
+  @@index([level])
+}
+
 model Subscription {
   id        String   @id @default(cuid())
   userId    String

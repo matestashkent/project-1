@@ -5,7 +5,10 @@ import { StudentProfile } from '@/lib/types';
 import { requireAuth, isAuthError } from '@/lib/auth';
 import { rateLimit } from '@/lib/rateLimit';
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const client = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+  defaultHeaders: { 'anthropic-beta': 'prompt-caching-2024-07-31' },
+});
 
 export async function POST(request: NextRequest) {
   const auth = requireAuth(request);
@@ -33,7 +36,9 @@ export async function POST(request: NextRequest) {
     const response = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 512,
-      system: buildSystemPrompt(profile),
+      system: [
+        { type: 'text', text: buildSystemPrompt(profile), cache_control: { type: 'ephemeral' } },
+      ] as Parameters<typeof client.messages.create>[0]['system'],
       messages: [{ role: 'user', content: buildChatPrompt(lessonContent, chatHistory, trimmedMessage, profile) }],
     });
 
