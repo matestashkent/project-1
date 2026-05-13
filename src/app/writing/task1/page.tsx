@@ -15,6 +15,49 @@ const TYPE_ICON: Record<string, string> = {
   'Table': '📋',
 };
 
+const TYPE_TIPS: Record<string, { steps: string[]; vocab: string[]; avoid: string }> = {
+  'Bar Chart': {
+    steps: [
+      'Найди наибольшее и наименьшее значение по каждой категории',
+      'Сравни страны/группы между собой — кто лидирует, кто отстаёт',
+      'Напиши overview (2 предложения) — главные тенденции без цифр',
+      'В деталях — конкретные цифры + сравнения (в 2 раза больше / similar to)',
+    ],
+    vocab: ['accounts for', 'is significantly higher than', 'in contrast to', 'the largest share', 'while', 'whereas', 'followed by'],
+    avoid: 'Не объясняй причины ("because of...") и не давай своё мнение',
+  },
+  'Line Graph': {
+    steps: [
+      'Определи общий тренд каждой линии: рост, падение, стабильность',
+      'Найди пики (maximum) и минимумы — в каком году/месяце',
+      'Отметь точки пересечения линий или резкие изменения',
+      'Overview: общая тенденция за весь период',
+    ],
+    vocab: ['rose sharply', 'declined steadily', 'remained stable', 'peaked at', 'reached a low of', 'fluctuated', 'overtook', 'by contrast'],
+    avoid: 'Не описывай каждую точку подряд — выбирай ключевые изменения',
+  },
+  'Pie Chart': {
+    steps: [
+      'Определи наибольший и наименьший сектор (в %)',
+      'Сгруппируй похожие по размеру категории вместе',
+      'Если два чарта — сравни, что изменилось между ними',
+      'Overview: какие категории доминируют',
+    ],
+    vocab: ['the largest proportion', 'accounts for nearly half', 'a quarter of', 'the smallest share', 'combined', 'slightly more than', 'compared to'],
+    avoid: 'Не перечисляй все сектора по порядку — это не описание, а список',
+  },
+  'Table': {
+    steps: [
+      'Найди максимальные и минимальные значения в таблице',
+      'Сравни строки (категории) и столбцы (периоды/страны)',
+      'Найди исключения — что выбивается из общей картины',
+      'Overview: 1-2 самые заметные тенденции по всей таблице',
+    ],
+    vocab: ['the highest figure', 'saw the greatest increase', 'more than double', 'by contrast', 'similarly', 'while X grew, Y fell', 'notable exception'],
+    avoid: 'Не переписывай все данные из таблицы — отбирай только ключевые',
+  },
+};
+
 export default function Task1Page() {
   const router = useRouter();
   const { user, telegramId } = useUser();
@@ -116,15 +159,52 @@ export default function Task1Page() {
         <p className="text-gray-600 text-xs mt-1">Minimum 150 words · Task 1 · 20 minutes</p>
       </div>
 
-      {/* Key tips */}
-      <div className="mx-5 mb-4 bg-gold/8 border border-gold/20 rounded-xl p-3">
-        <p className="text-gold text-xs font-bold mb-1.5">Структура Task 1:</p>
-        <p className="text-gray-400 text-xs leading-relaxed">
-          1. Обзор (overview) — 2 главные тенденции{'\n'}
-          2. Детали — конкретные цифры и сравнения{'\n'}
-          3. Без личного мнения и выводов о причинах
-        </p>
-      </div>
+      {/* Guide for this chart type */}
+      {task && TYPE_TIPS[task.type] && (() => {
+        const tips = TYPE_TIPS[task.type];
+        return (
+          <div className="mx-5 mb-4 space-y-3">
+            {/* Steps */}
+            <div className="bg-surface-card border border-surface-border rounded-xl p-4">
+              <p className="text-white text-xs font-bold mb-3 uppercase tracking-wide">Как анализировать {task.type}</p>
+              <div className="space-y-2">
+                {tips.steps.map((step, i) => (
+                  <div key={i} className="flex gap-3">
+                    <span className="text-gold font-bold text-xs w-4 flex-shrink-0 mt-0.5">{i + 1}.</span>
+                    <p className="text-gray-300 text-xs leading-relaxed">{step}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Vocab */}
+            <div className="bg-surface-card border border-surface-border rounded-xl p-4">
+              <p className="text-white text-xs font-bold mb-2.5 uppercase tracking-wide">Полезные фразы</p>
+              <div className="flex flex-wrap gap-1.5">
+                {tips.vocab.map((phrase) => (
+                  <span key={phrase} className="bg-gold/10 border border-gold/25 text-gold text-xs px-2.5 py-1 rounded-lg">
+                    {phrase}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Avoid */}
+            <div className="bg-rose-500/8 border border-rose-500/25 rounded-xl p-3">
+              <p className="text-rose-400 text-xs font-bold mb-1">Частая ошибка:</p>
+              <p className="text-gray-300 text-xs leading-relaxed">{tips.avoid}</p>
+            </div>
+
+            {/* Structure reminder */}
+            <div className="bg-gold/8 border border-gold/20 rounded-xl p-3">
+              <p className="text-gold text-xs font-bold mb-1.5">Структура ответа:</p>
+              <p className="text-gray-400 text-xs leading-relaxed">
+                {'Введение (1 пр.) → Обзор/Overview (2 пр.) → Детали (2–3 пр.) → Сравнения (1–2 пр.)'}
+              </p>
+            </div>
+          </div>
+        );
+      })()}
 
       {!feedback ? (
         <>
