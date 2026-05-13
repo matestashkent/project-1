@@ -2,34 +2,69 @@ import { StudentProfile } from './types';
 
 export function buildSystemPrompt(profile: StudentProfile): string {
   const lang = profile.language === 'uz' ? 'Uzbek' : 'Russian';
-  return `You are Mentora, a strict but supportive IELTS tutor AI.
-Student: ${profile.name}, Level: ${profile.level}, Target Band: ${profile.targetBand}.
-Language: Always respond in ${lang} unless the student writes in a different language.
-Rules: Never inflate scores. Use Central Asia/Uzbekistan-relevant examples. Be concise and direct.
+  const weakList = profile.weakAreas?.join(', ') || 'general';
+  return `You are Mentora, a professional IELTS examiner and tutor.
+
+STUDENT PROFILE:
+- Name: ${profile.name}
+- English level: ${profile.level}
+- Target IELTS band: ${profile.targetBand}
+- Weak areas: ${weakList}
+- Study time per day: ${profile.studyMinutes} minutes
+
+LANGUAGE RULES:
+- Give ALL explanations, feedback, tips, and teaching in ${lang}.
+- All IELTS content (essay topics, reading passages, example sentences) stays in English.
+- Adapt complexity of explanations to ${profile.level} level.
+
+PERSONALIZATION:
+- Focus feedback on the student's weak areas: ${weakList}.
+- Reference their target Band ${profile.targetBand} when setting expectations.
+- For ${profile.level} students: ${
+    profile.level === 'A1-A2'
+      ? 'use simple vocabulary in explanations, short sentences, lots of examples'
+      : profile.level === 'B1-B2'
+      ? 'balance explanation depth with clarity, show before/after examples'
+      : 'be concise and technical, reference band descriptors directly'
+  }.
+
+CONTENT RULES:
+- IELTS tasks must be authentic: international topics, academic register, no geographic bias.
+- Never inflate scores. Apply official IELTS band descriptors strictly.
+- Be concise and direct.
 
 FORMATTING — VERY IMPORTANT:
 - Plain text ONLY. No markdown whatsoever.
-- No asterisks (*bold*, **bold**), no underscores, no backticks.
-- No tables (no | symbols).
-- No --- dividers.
-- No emojis.
-- No headers (#, ##).
-- Use simple numbered lists (1. 2. 3.) or letters (A) B) C)) when needed.
-- Short paragraphs separated by a blank line. Maximum 150 words per response.`;
+- No asterisks, no underscores, no backticks, no tables, no --- dividers.
+- No emojis. No headers (#, ##).
+- Use simple numbered lists (1. 2. 3.) when needed.
+- Short paragraphs. Maximum 150 words per response.`;
 }
 
 export function buildLessonPrompt(profile: StudentProfile): string {
-  return `Generate a personalized IELTS Writing lesson for this student.
-Weak areas: ${profile.weakAreas.join(', ')}. Level: ${profile.level}. Target: Band ${profile.targetBand}.
+  const lang = profile.language === 'uz' ? 'Uzbek' : 'Russian';
+  const weakList = profile.weakAreas?.join(', ') || 'writing';
+  return `Generate a personalized IELTS lesson for this student.
+
+STUDENT: Level ${profile.level}, Target Band ${profile.targetBand}, Weak areas: ${weakList}.
+
+Choose a specific IELTS skill that targets their weak areas. Examples of good lesson topics:
+- Writing: topic sentences, cohesive devices, paraphrasing the question, complex sentences, opinion structure
+- Reading: skimming, scanning, True/False/Not Given logic, matching headings
+- Listening: number/date recognition, predicting answers, understanding paraphrase
+- Speaking: fluency techniques, extending answers, discourse markers, pronunciation of word stress
+- Grammar: conditionals, passive voice, relative clauses, articles, countable/uncountable nouns
+
+The English examples (goodExample, badExample) must be authentic IELTS Academic quality — use globally relevant topics like climate, health, technology, education, or urban development.
 
 Return ONLY valid JSON, no extra text:
 {
-  "topic": "specific lesson title",
-  "whyImportant": "why this directly improves their IELTS band (1-2 sentences)",
-  "explanation": "clear explanation, max 200 words, adapted to level ${profile.level}",
-  "goodExample": "example that would score Band ${profile.targetBand}+, in quotes",
-  "badExample": "low-scoring example that shows common mistakes, in quotes",
-  "task": "one specific practice task the student can do right now"
+  "topic": "specific IELTS skill title (e.g. 'Using cohesive devices in Writing Task 2')",
+  "whyImportant": "in ${lang}: direct link to their Band ${profile.targetBand} goal and weak area ${weakList} (1-2 sentences)",
+  "explanation": "in ${lang}: clear teaching explanation, max 200 words, adapted to ${profile.level} level",
+  "goodExample": "in English: Band ${profile.targetBand}+ quality IELTS example sentence or short paragraph",
+  "badExample": "in English: a typical ${profile.level}-level mistake that costs marks, showing the same idea done poorly",
+  "task": "in ${lang}: one specific 5-10 minute practice task the student can do right now"
 }`;
 }
 
@@ -122,33 +157,31 @@ Train               |          41
 Bicycle / Walking   |           0`,
   },
   {
-    id: 'uzbekistan-enrollment',
+    id: 'global-enrollment',
     type: 'Table',
-    title: 'Students enrolled in higher education in Uzbekistan by subject (2015 and 2022)',
-    description: 'The table below shows the number of students enrolled in higher education in Uzbekistan by subject area in 2015 and 2022.',
-    data: `Subject Area          |  2015   |  2022   | Change
-----------------------+---------+---------+--------
-Engineering & Tech.   |  45,200 |  89,400 | +97.8%
-Economics & Business  |  38,600 |  72,100 | +86.8%
-Medicine & Health     |  22,300 |  48,700 |+118.4%
-Education             |  31,500 |  41,200 | +30.8%
-Natural Sciences      |  12,800 |  19,600 | +53.1%
-Arts & Humanities     |   9,400 |  10,200 |  +8.5%
-TOTAL                 | 159,800 | 281,200 | +76.0%`,
+    title: 'Proportion of adults with tertiary education in five countries (2000 and 2020)',
+    description: 'The table below shows the percentage of adults aged 25–64 with tertiary education qualifications in five countries in 2000 and 2020.',
+    data: `Country        | 2000 | 2020 | Change
+---------------+------+------+-------
+South Korea    |  23% |  50% | +27pp
+Canada         |  38% |  57% | +19pp
+United Kingdom |  26% |  48% | +22pp
+Brazil         |   7% |  21% | +14pp
+Italy          |   9% |  20% | +11pp`,
   },
   {
-    id: 'temperatures',
+    id: 'rainfall',
     type: 'Line Graph',
-    title: 'Average monthly temperatures in Tashkent and London (°C)',
-    description: 'The line graph below shows the average monthly temperatures in Tashkent (Uzbekistan) and London (UK) throughout the year.',
-    data: `Month | Tashkent | London
-------+----------+-------
-Jan   |    2°C   |   5°C
-Mar   |   11°C   |   7°C
-May   |   23°C   |  13°C
-Jul   |   32°C   |  19°C
-Sep   |   24°C   |  15°C
-Nov   |    9°C   |   8°C`,
+    title: 'Average monthly rainfall in Sydney and Vancouver (mm)',
+    description: 'The line graph below shows the average monthly rainfall in millimetres in Sydney (Australia) and Vancouver (Canada) throughout the year.',
+    data: `Month | Sydney | Vancouver
+------+--------+----------
+Jan   |  103mm |    154mm
+Mar   |  131mm |    101mm
+May   |  123mm |     65mm
+Jul   |   97mm |     32mm
+Sep   |   68mm |     43mm
+Nov   |   83mm |    130mm`,
   },
   {
     id: 'leisure-time',
@@ -210,43 +243,36 @@ Return ONLY valid JSON:
 }
 
 export function buildReadingPrompt(profile: StudentProfile): string {
-  return `Generate an IELTS Academic Reading exercise for level ${profile.level}.
+  const lang = profile.language === 'uz' ? 'Uzbek' : 'Russian';
+  return `Generate an authentic IELTS Academic Reading True/False/Not Given exercise.
+
+STUDENT LEVEL: ${profile.level} — adjust passage complexity accordingly:
+- A1-A2: clearer vocabulary, shorter sentences, concrete topic
+- B1-B2: standard IELTS Academic difficulty, some technical vocabulary
+- C1-C2: complex arguments, dense vocabulary, abstract ideas
+
+PASSAGE REQUIREMENTS:
+- 280-320 words, formal academic register (like a journal article or encyclopaedia)
+- Topic must be typical of real IELTS Academic tests. Choose from: history of science or technology, environmental research, urban studies, anthropology, psychology research, economics, medicine, geography, or archaeology.
+- NO geographic bias. Use international, globally relevant content.
+- Factual, informative, no personal opinions in the passage itself.
+
+QUESTION REQUIREMENTS:
+- 5 statements testing specific details and inferences from the passage
+- Must include at least one TRUE, one FALSE, and one NOT GIVEN
+- NOT GIVEN means the passage neither confirms nor denies it — not that it is wrong
+- Explanations must be in ${lang} and reference the exact part of the passage
 
 Return ONLY valid JSON:
 {
   "title": "passage title",
-  "text": "academic reading passage, 250-300 words, formal style on a topic relevant to Central Asia or international education",
+  "text": "full academic passage text, 280-320 words",
   "questions": [
-    {
-      "id": 1,
-      "statement": "statement based on the passage for True/False/Not Given",
-      "answer": "TRUE",
-      "explanation": "brief explanation with reference to the text"
-    },
-    {
-      "id": 2,
-      "statement": "another statement",
-      "answer": "FALSE",
-      "explanation": "brief explanation"
-    },
-    {
-      "id": 3,
-      "statement": "another statement",
-      "answer": "NOT GIVEN",
-      "explanation": "brief explanation"
-    },
-    {
-      "id": 4,
-      "statement": "another statement",
-      "answer": "TRUE",
-      "explanation": "brief explanation"
-    },
-    {
-      "id": 5,
-      "statement": "another statement",
-      "answer": "FALSE",
-      "explanation": "brief explanation"
-    }
+    { "id": 1, "statement": "...", "answer": "TRUE", "explanation": "in ${lang}: reference to passage" },
+    { "id": 2, "statement": "...", "answer": "FALSE", "explanation": "in ${lang}: reference to passage" },
+    { "id": 3, "statement": "...", "answer": "NOT GIVEN", "explanation": "in ${lang}: why this cannot be determined" },
+    { "id": 4, "statement": "...", "answer": "TRUE", "explanation": "in ${lang}: reference to passage" },
+    { "id": 5, "statement": "...", "answer": "FALSE", "explanation": "in ${lang}: reference to passage" }
   ]
 }`;
 }
@@ -331,26 +357,37 @@ Return ONLY valid JSON:
 }
 
 export function buildListeningPrompt(profile: StudentProfile): string {
-  return `Generate an IELTS Listening exercise for level ${profile.level}.
-Use a realistic scenario: a university lecture, radio programme, conversation between two people, or a monologue about everyday topics.
-Topics relevant to Uzbekistan, Central Asia, or international student life are preferred.
+  const lang = profile.language === 'uz' ? 'Uzbek' : 'Russian';
+  return `Generate an authentic IELTS Listening exercise for level ${profile.level}.
+
+SCENARIO: Choose one of these real IELTS Listening scenario types:
+- Section 1: Conversation between two people in an everyday social context (e.g. booking a tour, registering at a library, enquiring about a course)
+- Section 2: A monologue in an everyday social context (e.g. a radio announcement, museum audio guide, community event information)
+- Section 3: A conversation in an academic context (e.g. two students discussing an assignment, a tutor giving advice)
+- Section 4: A university lecture extract on an academic topic
+
+PASSAGE REQUIREMENTS:
+- 160-200 words of natural spoken English
+- Authentic British or Australian English register
+- Contains specific details: names, numbers, dates, locations, times — these make good question targets
+- NO geographic bias. International content only.
+- Difficulty adapted to ${profile.level}
+
+QUESTION REQUIREMENTS:
+- 5 multiple choice questions testing specific details
+- Wrong options must be plausible (mentioned or implied in the passage) — not obviously wrong
+- Explanations in ${lang}, referencing exact words from the passage
 
 Return ONLY valid JSON:
 {
-  "title": "short descriptive title of the audio",
-  "passage": "The spoken text to be read aloud. 150-200 words. Natural spoken English with a clear narrative. No markdown.",
+  "title": "short title describing the scenario",
+  "passage": "full spoken text, 160-200 words, natural dialogue or monologue, no markdown",
   "questions": [
-    {
-      "id": 1,
-      "question": "question about a specific detail from the passage",
-      "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
-      "answer": "A) ...",
-      "explanation": "brief explanation referencing the passage"
-    },
-    { "id": 2, "question": "...", "options": ["A)...","B)...","C)...","D)..."], "answer": "B) ...", "explanation": "..." },
-    { "id": 3, "question": "...", "options": ["A)...","B)...","C)...","D)..."], "answer": "C) ...", "explanation": "..." },
-    { "id": 4, "question": "...", "options": ["A)...","B)...","C)...","D)..."], "answer": "A) ...", "explanation": "..." },
-    { "id": 5, "question": "...", "options": ["A)...","B)...","C)...","D)..."], "answer": "D) ...", "explanation": "..." }
+    { "id": 1, "question": "...", "options": ["A) ...", "B) ...", "C) ...", "D) ..."], "answer": "A) ...", "explanation": "in ${lang}" },
+    { "id": 2, "question": "...", "options": ["A) ...","B) ...","C) ...","D) ..."], "answer": "B) ...", "explanation": "in ${lang}" },
+    { "id": 3, "question": "...", "options": ["A) ...","B) ...","C) ...","D) ..."], "answer": "C) ...", "explanation": "in ${lang}" },
+    { "id": 4, "question": "...", "options": ["A) ...","B) ...","C) ...","D) ..."], "answer": "A) ...", "explanation": "in ${lang}" },
+    { "id": 5, "question": "...", "options": ["A) ...","B) ...","C) ...","D) ..."], "answer": "D) ...", "explanation": "in ${lang}" }
   ]
 }`;
 }
@@ -374,8 +411,10 @@ ${history ? `Conversation so far:\n${history}\n\n` : ''}Student's message: "${st
 
 Instructions:
 - If the message is vague ("not understanding", "confusing"), ask what specifically is unclear using A/B/C/D choice buttons
-- If specific, re-explain using a COMPLETELY DIFFERENT analogy (never repeat the same explanation)
-- Use examples from Uzbekistan/Central Asia context when relevant
+- If specific, re-explain using a COMPLETELY DIFFERENT analogy or example (never repeat the same explanation)
+- Use simple, universally relatable examples — everyday situations, science, nature, travel, sport
+- Adapt language complexity to their level: ${profile.level}
+- For their weak areas (${profile.weakAreas?.join(', ') || 'general'}), be especially thorough
 - Maximum 150 words
 - End with one simple check question
 - Level: ${profile.level}, target: Band ${profile.targetBand}`;
