@@ -17,14 +17,21 @@ export default function ListeningPage() {
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [showPassage, setShowPassage] = useState(false);
   const [score, setScore] = useState<{ correct: number; total: number } | null>(null);
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [audioLoading, setAudioLoading] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     const p = getProfile();
     if (!p && !user) { router.replace('/'); return; }
     setProfile(p);
     loadListening(p);
-    return () => { window.speechSynthesis?.cancel(); };
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
   }, [router, user]);
 
   const loadListening = async (p: StudentProfile | null) => {
@@ -32,6 +39,7 @@ export default function ListeningPage() {
     setAnswers({});
     setShowPassage(false);
     setScore(null);
+    setAudioUrl(null);
 
     const activeProfile = p || {
       name: user?.name || 'Student',
@@ -66,22 +74,68 @@ export default function ListeningPage() {
     }
   };
 
-  const playAudio = () => {
+  const generateAudio = async (passage: string): Promise<string | null> => {
+    setAudioLoading(true);
+    try {
+      const res = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: passage }),
+      });
+      if (!res.ok) throw new Error('TTS failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      setAudioUrl(url);
+      return url;
+    } catch (e) {
+      console.error('TTS error:', e);
+      return null;
+    } finally {
+      setAudioLoading(false);
+    }
+  };
+
+  const playAudio = async () => {
     if (!data) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(data.passage);
-    utterance.lang = 'en-US';
-    utterance.rate = 0.9;
-    utterance.pitch = 1;
-    utterance.onend = () => setStage('questions');
-    utteranceRef.current = utterance;
-    window.speechSynthesis.speak(utterance);
+
+    let url = audioUrl;
+    if (!url) {
+      setStage('playing');
+      url = await generateAudio(data.passage);
+      if (!url) {
+        alert('Не удалось загрузить аудио. Попробуй ещё раз.');
+        setStage('ready');
+        return;
+      }
+    }
+
     setStage('playing');
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+
+    const audio = new Audio(url);
+    audioRef.current = audio;
+    audio.onended = () => setStage('questions');
+    audio.play();
   };
 
   const stopAudio = () => {
-    window.speechSynthesis.cancel();
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
     setStage('questions');
+  };
+
+  const replayAudio = () => {
+    if (!audioRef.current || !audioUrl) return;
+    audioRef.current.pause();
+    const audio = new Audio(audioUrl);
+    audioRef.current = audio;
+    audio.onended = () => {};
+    audio.play();
   };
 
   const selectAnswer = (questionId: number, option: string) => {
@@ -107,7 +161,7 @@ export default function ListeningPage() {
           <span className="text-4xl">🎧</span>
         </div>
         <div className="text-center">
-          <p className="text-white text-lg font-semibold">Генерирую аудио...</p>
+          <p className="text-white text-lg font-semibold">Генерирую задание...</p>
           <p className="text-gray-500 text-sm mt-1">Подготавливаю задание по Listening</p>
         </div>
         <div className="flex gap-2">
@@ -135,7 +189,7 @@ export default function ListeningPage() {
             <p className="text-white text-sm font-semibold mb-2">Как проходит задание:</p>
             <div className="space-y-2">
               {[
-                { n: '1', t: 'Нажми "Воспроизвести" — система прочитает текст вслух' },
+                { n: '1', t: 'Нажми "Воспроизвести" — загрузится аудио с реальным голосом' },
                 { n: '2', t: 'Слушай внимательно — текст не виден во время прослушивания' },
                 { n: '3', t: 'После записи появятся 5 вопросов — выбери правильный ответ' },
                 { n: '4', t: 'Проверь ответы и прочитай объяснения' },
@@ -155,10 +209,19 @@ export default function ListeningPage() {
 
           <button
             onClick={playAudio}
-            className="w-full py-5 bg-gold text-surface font-bold rounded-2xl text-lg active:scale-[0.98] transition-transform flex items-center justify-center gap-3"
+            disabled={audioLoading}
+            className="w-full py-5 bg-gold text-surface font-bold rounded-2xl text-lg active:scale-[0.98] transition-transform flex items-center justify-center gap-3 disabled:opacity-60"
           >
-            <span>▶</span> Воспроизвести
+            {audioLoading ? (
+              <>
+                <span className="w-5 h-5 border-2 border-surface/30 border-t-surface rounded-full animate-spin" />
+                Загружаю аудио...
+              </>
+            ) : (
+              <><span>▶</span> Воспроизвести</>
+            )}
           </button>
+
           <button
             onClick={() => profile && loadListening(profile)}
             className="w-full py-3 bg-surface-card border border-surface-border text-gray-400 font-medium rounded-2xl text-sm active:scale-[0.98] transition-transform"
@@ -171,24 +234,36 @@ export default function ListeningPage() {
       {/* PLAYING */}
       {stage === 'playing' && (
         <div className="mx-5 space-y-4">
-          <div className="text-center py-10">
-            <div className="w-24 h-24 bg-emerald-500/15 border-2 border-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-4xl animate-pulse">🔊</span>
+          {audioLoading ? (
+            <div className="text-center py-10">
+              <div className="w-24 h-24 bg-gold/10 border-2 border-gold/30 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+                <span className="text-4xl">⏳</span>
+              </div>
+              <p className="text-white font-semibold text-lg">Загружаю аудио...</p>
+              <p className="text-gray-500 text-sm mt-1">Подготавливаю качественную запись</p>
             </div>
-            <p className="text-white font-semibold text-lg">Слушай внимательно</p>
-            <p className="text-gray-500 text-sm mt-1">Текст не виден — как на реальном экзамене</p>
-          </div>
+          ) : (
+            <div className="text-center py-10">
+              <div className="w-24 h-24 bg-emerald-500/15 border-2 border-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-4xl animate-pulse">🔊</span>
+              </div>
+              <p className="text-white font-semibold text-lg">Слушай внимательно</p>
+              <p className="text-gray-500 text-sm mt-1">Текст не виден — как на реальном экзамене</p>
+            </div>
+          )}
 
           <div className="flex gap-3">
             <button
-              onClick={playAudio}
-              className="flex-1 py-4 bg-surface-card border border-surface-border text-gray-400 font-medium rounded-2xl text-sm active:scale-[0.98]"
+              onClick={replayAudio}
+              disabled={audioLoading || !audioUrl}
+              className="flex-1 py-4 bg-surface-card border border-surface-border text-gray-400 font-medium rounded-2xl text-sm active:scale-[0.98] disabled:opacity-40"
             >
               Повторить
             </button>
             <button
               onClick={stopAudio}
-              className="flex-1 py-4 bg-emerald-500 text-white font-bold rounded-2xl text-base active:scale-[0.98]"
+              disabled={audioLoading}
+              className="flex-1 py-4 bg-emerald-500 text-white font-bold rounded-2xl text-base active:scale-[0.98] disabled:opacity-40"
             >
               Перейти к вопросам
             </button>
@@ -201,8 +276,9 @@ export default function ListeningPage() {
         <div className="mx-5 space-y-4">
           <div className="flex gap-3 mb-2">
             <button
-              onClick={playAudio}
-              className="flex-1 py-3 bg-surface-card border border-surface-border text-gray-400 text-sm font-medium rounded-xl active:scale-[0.98]"
+              onClick={replayAudio}
+              disabled={!audioUrl}
+              className="flex-1 py-3 bg-surface-card border border-surface-border text-gray-400 text-sm font-medium rounded-xl active:scale-[0.98] disabled:opacity-40"
             >
               🔊 Слушать снова
             </button>
@@ -247,7 +323,6 @@ export default function ListeningPage() {
       {/* RESULT */}
       {stage === 'result' && score && (
         <div className="mx-5 space-y-4">
-          {/* Score */}
           <div className="bg-surface-card border border-gold/30 rounded-2xl p-5 text-center">
             <p className="text-gray-400 text-sm">Результат</p>
             <p className="text-6xl font-bold text-gold mt-1">{score.correct}/{score.total}</p>
@@ -259,7 +334,6 @@ export default function ListeningPage() {
             </p>
           </div>
 
-          {/* Question review */}
           {data.questions.map((q) => {
             const selected = answers[q.id];
             const correct = selected === q.answer;
@@ -275,7 +349,7 @@ export default function ListeningPage() {
                 {!correct && (
                   <p className="text-rose-400 text-xs mb-1">Твой ответ: {selected}</p>
                 )}
-                <p className={`text-xs font-medium mb-1 ${correct ? 'text-emerald-400' : 'text-emerald-400'}`}>
+                <p className="text-emerald-400 text-xs font-medium mb-1">
                   Правильно: {q.answer}
                 </p>
                 <p className="text-gray-500 text-xs leading-relaxed">{q.explanation}</p>
@@ -283,7 +357,6 @@ export default function ListeningPage() {
             );
           })}
 
-          {/* Show passage */}
           <button
             onClick={() => setShowPassage(!showPassage)}
             className="w-full py-3 bg-surface-card border border-surface-border text-gray-400 text-sm font-medium rounded-xl active:scale-[0.98]"
@@ -297,6 +370,14 @@ export default function ListeningPage() {
               <p className="text-gray-300 text-sm leading-relaxed">{data.passage}</p>
             </div>
           )}
+
+          <button
+            onClick={() => replayAudio()}
+            disabled={!audioUrl}
+            className="w-full py-3 bg-surface-card border border-surface-border text-gray-400 text-sm font-medium rounded-xl active:scale-[0.98] disabled:opacity-40"
+          >
+            🔊 Прослушать ещё раз
+          </button>
 
           <button
             onClick={() => profile && loadListening(profile)}
