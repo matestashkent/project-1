@@ -1,33 +1,34 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-  id                 String         @id @default(cuid())
-  telegramId         BigInt         @unique
-  name               String
-  language           String         @default("ru")
-  level              String         @default("B1-B2")
-  currentBand        Float          @default(0)
-  targetBand         Float          @default(6.5)
-  examIn             String         @default("flexible")
-  studyMinutes       Int            @default(30)
-  weakAreas          String[]       @default([])
-  streak             Int            @default(0)
-  lastActive         DateTime       @default(now())
-  lessonsCompleted   Int            @default(0)
-  writingSubmissions Int            @default(0)
-  mockExamsCompleted Int            @default(0)
-  organizationId     String?
-  createdAt          DateTime       @default(now())
-  essays             Essay[]
-  sessions           Session[]
-  subscriptions      Subscription[]
+  id                  String   @id @default(cuid())
+  telegramId          BigInt   @unique
+  name                String
+  language            String   @default("ru")
+  level               String   @default("B1-B2")
+  currentBand         Float    @default(0)
+  targetBand          Float    @default(6.5)
+  examIn              String   @default("flexible")
+  studyMinutes        Int      @default(30)
+  weakAreas           String[] @default([])
+  streak              Int      @default(0)
+  lastActive          DateTime @default(now())
+  lessonsCompleted    Int      @default(0)
+  writingSubmissions  Int      @default(0)
+  mockExamsCompleted  Int      @default(0)
+  organizationId      String?
+  createdAt           DateTime @default(now())
+
+  essays        Essay[]
+  subscriptions Subscription[]
+  sessions      Session[]
 }
 
 model Essay {
@@ -44,7 +45,8 @@ model Essay {
   feedback    String
   topTip      String?
   createdAt   DateTime @default(now())
-  user        User     @relation(fields: [userId], references: [id])
+
+  user User @relation(fields: [userId], references: [id])
 }
 
 model Session {
@@ -56,7 +58,8 @@ model Session {
   score       Float?
   examType    String   @default("ielts")
   completedAt DateTime @default(now())
-  user        User     @relation(fields: [userId], references: [id])
+
+  user User @relation(fields: [userId], references: [id])
 }
 
 model Subscription {
@@ -66,5 +69,6 @@ model Subscription {
   status    String   @default("active")
   startedAt DateTime @default(now())
   expiresAt DateTime
-  user      User     @relation(fields: [userId], references: [id])
+
+  user User @relation(fields: [userId], references: [id])
 }
