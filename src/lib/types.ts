@@ -55,3 +55,26 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
 }
+
+export interface SpeakingFeedback {
+  fluencyCoherence: { band: number; comment: string; quote: string };
+  lexicalResource: { band: number; comment: string; quote: string };
+  grammaticalRange: { band: number; comment: string; quote: string };
+  pronunciation: { band: number; comment: string; quote: string };
+  overallBand: number;
+  topTip: string;
+}
+
+export interface ListeningQuestion {
+  id: number;
+  question: string;
+  options: string[];
+  answer: string;
+  explanation: string;
+}
+
+export interface ListeningData {
+  title: string;
+  passage: string;
+  questions: ListeningQuestion[];
+}

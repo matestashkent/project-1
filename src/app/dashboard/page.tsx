@@ -95,12 +95,28 @@ export default function DashboardPage() {
       border: 'border-emerald-500/30',
     },
     {
+      href: '/listening',
+      icon: '🎧',
+      title: 'Listening Practice',
+      sub: 'Слушай и отвечай на вопросы',
+      grad: 'from-purple-500/15 to-violet-500/15',
+      border: 'border-purple-500/30',
+    },
+    {
+      href: '/speaking',
+      icon: '🗣️',
+      title: 'Speaking Practice',
+      sub: 'Говори и получи оценку AI',
+      grad: 'from-rose-500/15 to-pink-500/15',
+      border: 'border-rose-500/30',
+    },
+    {
       href: '/exam',
       icon: '📝',
       title: 'Mock Exam',
       sub: 'Симуляционный экзамен',
-      grad: 'from-rose-500/15 to-orange-500/15',
-      border: 'border-rose-500/30',
+      grad: 'from-orange-500/15 to-red-500/15',
+      border: 'border-orange-500/30',
     },
   ];
 

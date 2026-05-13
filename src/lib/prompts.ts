@@ -251,6 +251,110 @@ Return ONLY valid JSON:
 }`;
 }
 
+export interface CueCard {
+  topic: string;
+  points: string[];
+}
+
+export const SPEAKING_CUES: CueCard[] = [
+  {
+    topic: 'Describe a skill you would like to learn',
+    points: ['What the skill is', 'Why you want to learn it', 'How you would learn it', 'How it would benefit your life'],
+  },
+  {
+    topic: 'Describe an interesting place you have visited',
+    points: ['Where it is', 'When you went there', 'What you did there', 'Why it was memorable'],
+  },
+  {
+    topic: 'Describe a person who has influenced you',
+    points: ['Who this person is', 'How you know them', 'What they did or said', 'How they changed you'],
+  },
+  {
+    topic: 'Describe a book or film that made a strong impression on you',
+    points: ['What it is about', 'When you read or watched it', 'What you liked about it', 'Why it was meaningful to you'],
+  },
+  {
+    topic: 'Describe a time when you helped someone',
+    points: ['Who you helped', 'What the situation was', 'How you helped them', 'How you felt afterwards'],
+  },
+  {
+    topic: 'Describe a goal you want to achieve in the future',
+    points: ['What the goal is', 'Why you want to achieve it', 'What steps you are taking', 'How achieving it would change your life'],
+  },
+  {
+    topic: 'Describe a piece of technology you find very useful',
+    points: ['What it is', 'How often you use it', 'What you use it for', 'Why you think it is important'],
+  },
+  {
+    topic: 'Describe a traditional celebration or festival in your country',
+    points: ['What the celebration is', 'When it takes place', 'How people celebrate it', 'Why it is important to your culture'],
+  },
+];
+
+export function buildSpeakingEvalPrompt(cue: CueCard, transcript: string, profile: StudentProfile): string {
+  return `Evaluate this IELTS Speaking Part 2 response by official IELTS band descriptors.
+NEVER inflate scores. Student target: Band ${profile.targetBand}, Level: ${profile.level}.
+
+CUE CARD TOPIC: "${cue.topic}"
+BULLET POINTS: ${cue.points.join(' / ')}
+
+STUDENT'S SPOKEN RESPONSE (transcribed):
+"${transcript}"
+
+Evaluate on all 4 IELTS Speaking criteria. For "pronunciation", estimate based on word choice complexity and sentence fluency in the transcript.
+
+Return ONLY valid JSON:
+{
+  "fluencyCoherence": {
+    "band": <5.0 to 9.0 in 0.5 steps>,
+    "comment": "feedback on speaking pace, hesitations, logical flow, topic coverage",
+    "quote": "exact phrase from transcript illustrating main issue"
+  },
+  "lexicalResource": {
+    "band": <5.0 to 9.0 in 0.5 steps>,
+    "comment": "feedback on vocabulary range, collocations, topic-specific words",
+    "quote": "exact phrase from transcript"
+  },
+  "grammaticalRange": {
+    "band": <5.0 to 9.0 in 0.5 steps>,
+    "comment": "feedback on grammar accuracy and variety of structures",
+    "quote": "exact phrase from transcript"
+  },
+  "pronunciation": {
+    "band": <5.0 to 9.0 in 0.5 steps>,
+    "comment": "estimated feedback based on vocabulary complexity and discourse structure",
+    "quote": "exact phrase from transcript"
+  },
+  "overallBand": <average of 4 criteria rounded to nearest 0.5>,
+  "topTip": "the single most impactful improvement for IELTS Speaking (1-2 sentences)"
+}`;
+}
+
+export function buildListeningPrompt(profile: StudentProfile): string {
+  return `Generate an IELTS Listening exercise for level ${profile.level}.
+Use a realistic scenario: a university lecture, radio programme, conversation between two people, or a monologue about everyday topics.
+Topics relevant to Uzbekistan, Central Asia, or international student life are preferred.
+
+Return ONLY valid JSON:
+{
+  "title": "short descriptive title of the audio",
+  "passage": "The spoken text to be read aloud. 150-200 words. Natural spoken English with a clear narrative. No markdown.",
+  "questions": [
+    {
+      "id": 1,
+      "question": "question about a specific detail from the passage",
+      "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
+      "answer": "A) ...",
+      "explanation": "brief explanation referencing the passage"
+    },
+    { "id": 2, "question": "...", "options": ["A)...","B)...","C)...","D)..."], "answer": "B) ...", "explanation": "..." },
+    { "id": 3, "question": "...", "options": ["A)...","B)...","C)...","D)..."], "answer": "C) ...", "explanation": "..." },
+    { "id": 4, "question": "...", "options": ["A)...","B)...","C)...","D)..."], "answer": "A) ...", "explanation": "..." },
+    { "id": 5, "question": "...", "options": ["A)...","B)...","C)...","D)..."], "answer": "D) ...", "explanation": "..." }
+  ]
+}`;
+}
+
 export function buildChatPrompt(
   lessonContent: string,
   chatHistory: Array<{ role: string; content: string }>,
