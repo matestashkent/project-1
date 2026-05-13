@@ -60,7 +60,7 @@ const TYPE_TIPS: Record<string, { steps: string[]; vocab: string[]; avoid: strin
 
 export default function Task1Page() {
   const router = useRouter();
-  const { user, telegramId } = useUser();
+  const { user, token } = useUser();
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [task, setTask] = useState<Task1Data | null>(null);
   const [response, setResponse] = useState('');
@@ -108,7 +108,7 @@ export default function Task1Page() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(telegramId ? { 'x-telegram-id': telegramId } : {}),
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ profile: activeProfile, task, response }),
       });

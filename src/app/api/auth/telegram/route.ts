@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createHmac } from 'crypto';
 import { prisma } from '@/lib/db';
+import { createSessionToken } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,24 +27,20 @@ function verifyTelegramData(initData: string, botToken: string): Record<string, 
 export async function POST(req: NextRequest) {
   try {
     const { initData } = await req.json();
-
-    // In development without a bot token, allow direct profile creation
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
 
-    let telegramId: bigint;
-    let firstName: string;
-
-    if (botToken && initData) {
-      const verified = verifyTelegramData(initData, botToken);
-      if (!verified) return NextResponse.json({ error: 'Invalid Telegram data' }, { status: 401 });
-
-      const user = JSON.parse(verified['user'] || '{}');
-      telegramId = BigInt(user.id);
-      firstName = user.first_name || 'Student';
-    } else {
-      // Dev fallback — will be removed in production
-      return NextResponse.json({ error: 'No bot token configured' }, { status: 401 });
+    if (!botToken || !initData) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const verified = verifyTelegramData(initData, botToken);
+    if (!verified) {
+      return NextResponse.json({ error: 'Invalid Telegram data' }, { status: 401 });
+    }
+
+    const tgUser = JSON.parse(verified['user'] || '{}');
+    const telegramId = BigInt(tgUser.id);
+    const firstName = tgUser.first_name || 'Student';
 
     const user = await prisma.user.upsert({
       where: { telegramId },
@@ -51,7 +48,13 @@ export async function POST(req: NextRequest) {
       create: { telegramId, name: firstName },
     });
 
-    return NextResponse.json({ user });
+    const telegramIdStr = user.telegramId.toString();
+    const token = createSessionToken(telegramIdStr);
+
+    return NextResponse.json({
+      user: { ...user, telegramId: telegramIdStr },
+      token,
+    });
   } catch (err) {
     console.error('Auth error:', err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });

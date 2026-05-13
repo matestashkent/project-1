@@ -11,7 +11,7 @@ const STEPS: Step[] = ['welcome', 'name', 'level', 'band', 'examDate', 'studyTim
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { user, telegramId, loading } = useUser();
+  const { user, token, loading } = useUser();
   const [step, setStep] = useState<Step>('welcome');
   const [form, setForm] = useState({
     name: '',
@@ -69,11 +69,11 @@ export default function OnboardingPage() {
     saveProfile(profile);
     setStep('creating');
     // Save to DB if authenticated via Telegram
-    if (telegramId) {
+    if (token) {
       try {
         await fetch('/api/user/profile', {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'x-telegram-id': telegramId },
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
           body: JSON.stringify({ name: form.name, level: form.level, targetBand: form.targetBand, examIn: form.examIn, studyMinutes: form.studyMinutes, weakAreas }),
         });
       } catch {}

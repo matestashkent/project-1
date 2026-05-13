@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { requireAuth, isAuthError } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
-  const telegramId = req.headers.get('x-telegram-id');
-  if (!telegramId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const auth = requireAuth(req);
+  if (isAuthError(auth)) return auth;
+  const { telegramId } = auth;
 
   try {
     const user = await prisma.user.findUnique({
@@ -13,6 +15,7 @@ export async function GET(req: NextRequest) {
       include: {
         essays: {
           orderBy: { createdAt: 'asc' },
+          take: 100,
           select: { id: true, taskType: true, overallBand: true, createdAt: true },
         },
         subscriptions: { where: { status: 'active' }, orderBy: { expiresAt: 'desc' }, take: 1 },
@@ -46,8 +49,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const telegramId = req.headers.get('x-telegram-id');
-  if (!telegramId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const auth = requireAuth(req);
+  if (isAuthError(auth)) return auth;
+  const { telegramId } = auth;
 
   try {
     const body = await req.json();
@@ -56,12 +60,12 @@ export async function PUT(req: NextRequest) {
     const user = await prisma.user.update({
       where: { telegramId: BigInt(telegramId) },
       data: {
-        ...(name && { name }),
-        ...(language && { language }),
-        ...(level && { level }),
-        ...(targetBand && { targetBand }),
-        ...(examIn && { examIn }),
-        ...(studyMinutes && { studyMinutes }),
+        ...(name && { name: String(name).slice(0, 100) }),
+        ...(language && { language: String(language) }),
+        ...(level && { level: String(level) }),
+        ...(targetBand && { targetBand: Number(targetBand) }),
+        ...(examIn && { examIn: String(examIn) }),
+        ...(studyMinutes && { studyMinutes: Number(studyMinutes) }),
         ...(weakAreas && { weakAreas }),
         lastActive: new Date(),
       },

@@ -4,11 +4,13 @@ import { useRouter } from 'next/navigation';
 import { getProfile, addReadingScore } from '@/lib/storage';
 import { StudentProfile, ReadingPassage } from '@/lib/types';
 import BottomNav from '@/components/BottomNav';
+import { useUser } from '@/lib/userContext';
 
 type TFN = 'TRUE' | 'FALSE' | 'NOT GIVEN';
 
 export default function ReadingPage() {
   const router = useRouter();
+  const { token } = useUser();
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [passage, setPassage] = useState<ReadingPassage | null>(null);
   const [loading, setLoading] = useState(true);
@@ -31,7 +33,7 @@ export default function ReadingPage() {
     try {
       const res = await fetch('/api/generate-reading', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ profile: p }),
       });
       if (!res.ok) throw new Error('Failed');

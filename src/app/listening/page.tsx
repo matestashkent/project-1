@@ -10,7 +10,7 @@ type Stage = 'loading' | 'ready' | 'playing' | 'questions' | 'result';
 
 export default function ListeningPage() {
   const router = useRouter();
-  const { user } = useUser();
+  const { user, token } = useUser();
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [data, setData] = useState<ListeningData | null>(null);
   const [cacheId, setCacheId] = useState<string | null>(null);
@@ -64,7 +64,7 @@ export default function ListeningPage() {
     try {
       const res = await fetch('/api/generate-listening', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ profile: activeProfile }),
       });
       const result = await res.json();
@@ -99,7 +99,7 @@ export default function ListeningPage() {
     try {
       const res = await fetch('/api/tts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ text: data.passage, cacheId }),
       });
       if (!res.ok) throw new Error('TTS failed');

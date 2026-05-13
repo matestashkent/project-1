@@ -5,6 +5,7 @@ import { getProfile, addWritingBand } from '@/lib/storage';
 import { StudentProfile, WritingFeedback } from '@/lib/types';
 import BottomNav from '@/components/BottomNav';
 import WritingFeedbackDisplay from '@/components/WritingFeedback';
+import { useUser } from '@/lib/userContext';
 
 const PROMPTS = [
   "Some people think that technology has made our lives more complicated. Others believe it has made life easier. Discuss both views and give your own opinion.",
@@ -18,6 +19,7 @@ const PROMPTS = [
 
 export default function WritingPage() {
   const router = useRouter();
+  const { token } = useUser();
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [prompt, setPrompt] = useState('');
   const [essay, setEssay] = useState('');
@@ -45,7 +47,7 @@ export default function WritingPage() {
     try {
       const res = await fetch('/api/check-writing', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ profile, prompt, essay }),
       });
       const data = await res.json();

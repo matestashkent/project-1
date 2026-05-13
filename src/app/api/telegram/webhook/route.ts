@@ -5,8 +5,9 @@ import { sendMessage, answerCallbackQuery, inlineKeyboard, miniAppButton } from 
 export const dynamic = 'force-dynamic';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.railway.app';
+const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
 
-// In-memory onboarding sessions (works fine on Railway, one server)
+// In-memory onboarding sessions (single Railway instance)
 const sessions = new Map<number, {
   step: string;
   data: Record<string, string | number | string[]>;
@@ -33,13 +34,11 @@ async function handleStart(chatId: number, tgUser: TelegramUser) {
   const existing = await prisma.user.findUnique({ where: { telegramId: BigInt(tgUser.id) } });
 
   if (existing && existing.weakAreas.length > 0) {
-    // Already registered — show app button
     await sendMessage(chatId, `С возвращением, ${existing.name}! 👋\n\nТвой прогресс сохранён. Открывай приложение:`,
       miniAppButton('📚 Открыть Mentora', APP_URL));
     return;
   }
 
-  // Start onboarding
   sessions.set(chatId, { step: 'level', data: { name: tgUser.first_name } });
   await getOrCreateUser(tgUser);
 
@@ -58,7 +57,9 @@ async function handleCallback(chatId: number, tgUser: TelegramUser, data: string
   const session = sessions.get(chatId);
   if (!session) return;
 
-  const [key, value] = data.split(':');
+  const colonIdx = data.indexOf(':');
+  const key = data.slice(0, colonIdx);
+  const value = data.slice(colonIdx + 1);
 
   if (key === 'level') {
     session.data.level = value;
@@ -105,7 +106,6 @@ async function handleCallback(chatId: number, tgUser: TelegramUser, data: string
       ? ['writing', 'reading', 'listening', 'speaking']
       : [value];
 
-    // Save completed profile to DB
     await prisma.user.update({
       where: { telegramId: BigInt(tgUser.id) },
       data: {
@@ -143,17 +143,25 @@ async function handleCommand(chatId: number, tgUser: TelegramUser, text: string)
     );
   } else if (text.startsWith('/subscribe')) {
     await sendMessage(chatId,
-      '💳 <b>Тарифы Mentora</b>\n\n🟢 <b>Старт</b> — $19/мес\nWriting + Reading + Vocabulary\n\n🔵 <b>Основной</b> — $39/мес\nВсе 4 навыка + Mock Exam + Отчёты\n\n🟣 <b>Интенсив</b> — $59/мес\nБезлимит + приоритетная обработка\n\nОплата через приложение:',
+      '💳 <b>Тариф Mentora Pro</b>\n\n🔥 <b>79 000 сум / месяц</b>\n\n✅ Все модули без ограничений\n✅ Writing Task 1 + Task 2\n✅ Reading, Listening, Speaking\n✅ Чат с AI-ментором\n✅ Словарный модуль\n\n5 дней бесплатно при первой регистрации\n\nОформить подписку:',
       miniAppButton('Оформить подписку', `${APP_URL}/subscribe`)
     );
   } else if (text.startsWith('/help')) {
     await sendMessage(chatId,
-      '📋 <b>Команды Mentora</b>\n\n/start — начать / вернуться\n/app — открыть приложение\n/progress — мой прогресс\n/subscribe — тарифы и оплата\n/help — эта справка\n\nПо всем вопросам: @mentora_support'
+      '📋 <b>Команды Mentora</b>\n\n/start — начать / вернуться\n/app — открыть приложение\n/progress — мой прогресс\n/subscribe — тарифы и оплата\n/help — эта справка'
     );
   }
 }
 
 export async function POST(req: NextRequest) {
+  // Verify Telegram webhook secret
+  if (WEBHOOK_SECRET) {
+    const secret = req.headers.get('x-telegram-bot-api-secret-token');
+    if (secret !== WEBHOOK_SECRET) {
+      return NextResponse.json({ ok: false }, { status: 401 });
+    }
+  }
+
   try {
     const update: Update = await req.json();
 
@@ -172,6 +180,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error('Webhook error:', err);
-    return NextResponse.json({ ok: true }); // Always return 200 to Telegram
+    return NextResponse.json({ ok: true });
   }
 }

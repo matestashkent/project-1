@@ -2,10 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { buildSystemPrompt, buildReadingPrompt } from '@/lib/prompts';
 import { StudentProfile } from '@/lib/types';
+import { requireAuth, isAuthError } from '@/lib/auth';
+import { rateLimit } from '@/lib/rateLimit';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export async function POST(request: NextRequest) {
+  const auth = requireAuth(request);
+  if (isAuthError(auth)) return auth;
+  const { telegramId } = auth;
+
+  if (!rateLimit(`reading:${telegramId}`, 10)) {
+    return NextResponse.json({ error: 'Лимит заданий на этот час исчерпан.' }, { status: 429 });
+  }
+
   try {
     const { profile } = (await request.json()) as { profile: StudentProfile };
 
@@ -25,6 +35,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ passage });
   } catch (error) {
     console.error('Reading error:', error);
-    return NextResponse.json({ error: String(error) }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to generate passage' }, { status: 500 });
   }
 }

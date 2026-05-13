@@ -23,6 +23,7 @@ export interface DbUser {
 interface UserContextType {
   user: DbUser | null;
   telegramId: string | null;
+  token: string | null;
   loading: boolean;
   refreshUser: () => Promise<void>;
 }
@@ -30,21 +31,24 @@ interface UserContextType {
 const UserContext = createContext<UserContextType>({
   user: null,
   telegramId: null,
+  token: null,
   loading: true,
   refreshUser: async () => {},
 });
 
+const TOKEN_KEY = 'mentora_token';
 const TG_ID_KEY = 'mentora_tgid';
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<DbUser | null>(null);
   const [telegramId, setTelegramId] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = useCallback(async (tgId: string): Promise<DbUser | null> => {
+  const fetchProfile = useCallback(async (tok: string): Promise<DbUser | null> => {
     try {
       const res = await fetch('/api/user/profile', {
-        headers: { 'x-telegram-id': tgId },
+        headers: { Authorization: `Bearer ${tok}` },
       });
       if (res.ok) {
         const { user: dbUser } = await res.json();
@@ -56,9 +60,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshUser = useCallback(async () => {
-    const tgId = telegramId || localStorage.getItem(TG_ID_KEY);
-    if (tgId) await fetchProfile(tgId);
-  }, [telegramId, fetchProfile]);
+    const tok = token || localStorage.getItem(TOKEN_KEY);
+    if (tok) await fetchProfile(tok);
+  }, [token, fetchProfile]);
 
   useEffect(() => {
     async function authenticate() {
@@ -73,23 +77,28 @@ export function UserProvider({ children }: { children: ReactNode }) {
         });
 
         if (authRes.ok) {
-          const { user: authUser } = await authRes.json();
-          const tgId = authUser.telegramId;
-          localStorage.setItem(TG_ID_KEY, tgId);
-          setTelegramId(tgId);
-          await fetchProfile(tgId);
+          const { user: authUser, token: newToken } = await authRes.json();
+          localStorage.setItem(TOKEN_KEY, newToken);
+          localStorage.setItem(TG_ID_KEY, authUser.telegramId);
+          setToken(newToken);
+          setTelegramId(authUser.telegramId);
+          await fetchProfile(newToken);
         } else {
-          // Dev fallback: use cached telegramId
-          const cached = localStorage.getItem(TG_ID_KEY);
-          if (cached) {
-            setTelegramId(cached);
+          // Fallback: use cached token
+          const cached = localStorage.getItem(TOKEN_KEY);
+          const cachedId = localStorage.getItem(TG_ID_KEY);
+          if (cached && cachedId) {
+            setToken(cached);
+            setTelegramId(cachedId);
             await fetchProfile(cached);
           }
         }
       } catch {
-        const cached = localStorage.getItem(TG_ID_KEY);
-        if (cached) {
-          setTelegramId(cached);
+        const cached = localStorage.getItem(TOKEN_KEY);
+        const cachedId = localStorage.getItem(TG_ID_KEY);
+        if (cached && cachedId) {
+          setToken(cached);
+          setTelegramId(cachedId);
           await fetchProfile(cached);
         }
       } finally {
@@ -101,7 +110,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }, [fetchProfile]);
 
   return (
-    <UserContext.Provider value={{ user, telegramId, loading, refreshUser }}>
+    <UserContext.Provider value={{ user, telegramId, token, loading, refreshUser }}>
       {children}
     </UserContext.Provider>
   );

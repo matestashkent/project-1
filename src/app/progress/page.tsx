@@ -25,7 +25,7 @@ function formatDate(dateStr: string) {
 
 export default function ProgressPage() {
   const router = useRouter();
-  const { user, telegramId, loading: authLoading } = useUser();
+  const { user, token, loading: authLoading } = useUser();
   const [fullProfile, setFullProfile] = useState<FullProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -34,10 +34,10 @@ export default function ProgressPage() {
 
     async function loadProfile() {
       // Fetch full profile from DB if authenticated
-      if (telegramId) {
+      if (token) {
         try {
           const res = await fetch('/api/user/profile', {
-            headers: { 'x-telegram-id': telegramId },
+            headers: { Authorization: `Bearer ${token}` },
           });
           if (res.ok) {
             const { user: data } = await res.json();
@@ -75,7 +75,7 @@ export default function ProgressPage() {
     }
 
     loadProfile();
-  }, [authLoading, telegramId, router]);
+  }, [authLoading, token, router]);
 
   const handleReset = () => {
     if (confirm('Сбросить локальный кэш? Данные в базе останутся.')) {

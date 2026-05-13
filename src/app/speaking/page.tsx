@@ -12,7 +12,7 @@ type Stage = 'cue' | 'prep' | 'recording' | 'reviewing' | 'checking' | 'result';
 
 export default function SpeakingPage() {
   const router = useRouter();
-  const { user } = useUser();
+  const { user, token } = useUser();
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [cue, setCue] = useState<CueCard | null>(null);
   const [stage, setStage] = useState<Stage>('cue');
@@ -139,7 +139,7 @@ export default function SpeakingPage() {
     try {
       const res = await fetch('/api/check-speaking', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ profile: activeProfile, cue, transcript: finalText }),
       });
       const data = await res.json();

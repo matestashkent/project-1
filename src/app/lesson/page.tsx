@@ -5,9 +5,11 @@ import { getProfile, incrementLessons } from '@/lib/storage';
 import { StudentProfile, Lesson } from '@/lib/types';
 import BottomNav from '@/components/BottomNav';
 import SocraticChat from '@/components/SocraticChat';
+import { useUser } from '@/lib/userContext';
 
 export default function LessonPage() {
   const router = useRouter();
+  const { token } = useUser();
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(true);
@@ -31,7 +33,7 @@ export default function LessonPage() {
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({
           profile,
           lessonContent: lessonText,
@@ -57,7 +59,7 @@ export default function LessonPage() {
     try {
       const res = await fetch('/api/lesson', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ profile: p }),
       });
       if (!res.ok) throw new Error('Failed');
