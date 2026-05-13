@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       max_tokens: 2048,
       system: [
         { type: 'text', text: buildSystemPrompt(profile), cache_control: { type: 'ephemeral' } },
-      ] as Parameters<typeof client.messages.create>[0]['system'],
+      ] as any,
       messages: [{ role: 'user', content: buildWritingCheckPrompt(prompt, trimmedEssay, profile) }],
     });
 

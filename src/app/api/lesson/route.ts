@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       max_tokens: 1024,
       system: [
         { type: 'text', text: buildSystemPrompt(profile), cache_control: { type: 'ephemeral' } },
-      ] as Parameters<typeof client.messages.create>[0]['system'],
+      ] as any,
       messages: [{ role: 'user', content: buildLessonPrompt(profile) }],
     });
 
