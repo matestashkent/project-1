@@ -41,9 +41,12 @@ export default function ProgressPage() {
           });
           if (res.ok) {
             const { user: data } = await res.json();
-            setFullProfile(data as FullProfile);
-            setLoading(false);
-            return;
+            // If DB profile is incomplete (onboarding didn't sync), fall through to localStorage
+            if (data.weakAreas && data.weakAreas.length > 0) {
+              setFullProfile(data as FullProfile);
+              setLoading(false);
+              return;
+            }
           }
         } catch {}
       }

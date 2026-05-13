@@ -58,7 +58,7 @@ const SKILLS = [
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, loading, refreshUser } = useUser();
+  const { user, token, loading, refreshUser } = useUser();
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
 
@@ -92,7 +92,22 @@ export default function DashboardPage() {
     const p = getProfile();
     if (!p) { router.replace('/'); return; }
     setProfile(p);
-  }, [user, loading, router]);
+    // Sync localStorage profile to DB if DB is incomplete
+    if (token && p.weakAreas && p.weakAreas.length > 0) {
+      fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          name: p.name,
+          level: p.level,
+          targetBand: p.targetBand,
+          examIn: p.examIn,
+          studyMinutes: p.studyMinutes,
+          weakAreas: p.weakAreas,
+        }),
+      }).then(() => refreshUser()).catch(() => {});
+    }
+  }, [user, loading, router, token, refreshUser]);
 
   if (loading) return (
     <div className="min-h-screen bg-surface flex items-center justify-center">
