@@ -373,6 +373,14 @@ PASSAGE REQUIREMENTS:
 - NO geographic bias. International content only.
 - Difficulty adapted to ${profile.level}
 
+PASSAGE FORMAT (CRITICAL):
+- Section 1 and Section 3 (dialogues): Format EVERY speaking turn as one line starting with the speaker label. Example:
+  Speaker A: Good morning, I'd like to enquire about the evening classes.
+  Speaker B: Of course! We have several options available starting next month.
+  Speaker A: What days are the sessions held?
+  No narration, no stage directions — only speaker lines.
+- Section 2 and Section 4 (monologues): Plain flowing text, no speaker labels.
+
 QUESTION REQUIREMENTS:
 - 5 multiple choice questions testing specific details
 - Wrong options must be plausible (mentioned or implied in the passage) — not obviously wrong
@@ -381,7 +389,7 @@ QUESTION REQUIREMENTS:
 Return ONLY valid JSON:
 {
   "title": "short title describing the scenario",
-  "passage": "full spoken text, 160-200 words, natural dialogue or monologue, no markdown",
+  "passage": "spoken text 160-200 words — for dialogues use 'Speaker A: / Speaker B:' format per line; for monologues plain text",
   "questions": [
     { "id": 1, "question": "...", "options": ["A) ...", "B) ...", "C) ...", "D) ..."], "answer": "A) ...", "explanation": "in ${lang}" },
     { "id": 2, "question": "...", "options": ["A) ...","B) ...","C) ...","D) ..."], "answer": "B) ...", "explanation": "in ${lang}" },

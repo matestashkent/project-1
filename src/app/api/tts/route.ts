@@ -8,6 +8,49 @@ export const dynamic = 'force-dynamic';
 
 const MAX_TTS_LENGTH = 5000;
 
+type Segment = { speaker: 'A' | 'B' | 'mono'; text: string };
+
+function parsePassage(text: string): Segment[] {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const segments: Segment[] = [];
+
+  for (const line of lines) {
+    const matchA = line.match(/^Speaker\s*A\s*:\s*(.+)/i);
+    const matchB = line.match(/^Speaker\s*B\s*:\s*(.+)/i);
+    if (matchA) {
+      segments.push({ speaker: 'A', text: matchA[1].trim() });
+    } else if (matchB) {
+      segments.push({ speaker: 'B', text: matchB[1].trim() });
+    } else {
+      segments.push({ speaker: 'mono', text: line });
+    }
+  }
+
+  const isDialogue = segments.some(s => s.speaker === 'A' || s.speaker === 'B');
+  if (!isDialogue) {
+    return [{ speaker: 'mono', text: text.slice(0, MAX_TTS_LENGTH) }];
+  }
+  return segments;
+}
+
+async function generateSegment(text: string, voiceId: string, apiKey: string): Promise<ArrayBuffer> {
+  const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+    method: 'POST',
+    headers: { 'xi-api-key': apiKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      text,
+      model_id: 'eleven_monolingual_v1',
+      voice_settings: { stability: 0.5, similarity_boost: 0.75, style: 0.0, use_speaker_boost: true },
+    }),
+  });
+  if (!res.ok) throw new Error(`ElevenLabs error: ${res.status}`);
+  return res.arrayBuffer();
+}
+
+function concatBuffers(buffers: ArrayBuffer[]): Buffer {
+  return Buffer.concat(buffers.map(b => Buffer.from(b)));
+}
+
 export async function POST(request: NextRequest) {
   const auth = requireAuth(request);
   if (isAuthError(auth)) return auth;
@@ -35,35 +78,35 @@ export async function POST(request: NextRequest) {
     }
 
     const apiKey = process.env.ELEVENLABS_API_KEY;
-    const voiceId = process.env.ELEVENLABS_VOICE_ID;
+    const voiceIdA = process.env.ELEVENLABS_VOICE_ID;
+    // Second voice for Speaker B — defaults to Rachel (ElevenLabs stock female voice)
+    const voiceIdB = process.env.ELEVENLABS_VOICE_ID_B || 'EXAVITQu4vr4xnSDxMaL';
 
-    if (!apiKey || !voiceId) {
+    if (!apiKey || !voiceIdA) {
       return NextResponse.json({ error: 'TTS not configured' }, { status: 500 });
     }
 
     const trimmedText = text.slice(0, MAX_TTS_LENGTH);
+    const segments = parsePassage(trimmedText);
+    const isDialogue = segments.some(s => s.speaker !== 'mono');
 
-    const response = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-      {
-        method: 'POST',
-        headers: { 'xi-api-key': apiKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: trimmedText,
-          model_id: 'eleven_monolingual_v1',
-          voice_settings: { stability: 0.5, similarity_boost: 0.75, style: 0.0, use_speaker_boost: true },
-        }),
-      }
-    );
+    let finalBuffer: Buffer;
 
-    if (!response.ok) {
-      console.error('ElevenLabs error:', response.status);
-      return NextResponse.json({ error: 'TTS generation failed' }, { status: 500 });
+    if (isDialogue) {
+      // Generate all segments in parallel, each with its own voice
+      const audioChunks = await Promise.all(
+        segments.map(seg =>
+          generateSegment(seg.text, seg.speaker === 'B' ? voiceIdB : voiceIdA, apiKey)
+        )
+      );
+      finalBuffer = concatBuffers(audioChunks);
+    } else {
+      const buf = await generateSegment(trimmedText, voiceIdA, apiKey);
+      finalBuffer = Buffer.from(buf);
     }
 
-    const audioBuffer = await response.arrayBuffer();
     const key = `listening/${cacheId || Date.now()}.mp3`;
-    const audioUrl = await uploadAudioToR2(key, audioBuffer);
+    const audioUrl = await uploadAudioToR2(key, finalBuffer.buffer as ArrayBuffer);
 
     if (cacheId) {
       await prisma.listeningCache.update({ where: { id: cacheId }, data: { audioUrl } });
