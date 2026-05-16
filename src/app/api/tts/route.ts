@@ -56,8 +56,8 @@ export async function POST(request: NextRequest) {
   if (isAuthError(auth)) return auth;
   const { telegramId } = auth;
 
-  if (!rateLimit(`tts:${telegramId}`, 10)) {
-    return NextResponse.json({ error: 'Лимит аудио на этот час исчерпан.' }, { status: 429 });
+  if (!rateLimit(`tts:${telegramId}`, 25)) {
+    return NextResponse.json({ error: 'Лимит аудио на этот час исчерпан. Попробуй через час.' }, { status: 429 });
   }
 
   try {

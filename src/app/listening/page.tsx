@@ -86,7 +86,6 @@ export default function ListeningPage() {
   const fetchAndPlayAudio = async () => {
     if (!data) return;
 
-    // If we already have the audio URL — just play
     if (audioUrl) {
       playUrl(audioUrl);
       setStage('playing');
@@ -96,19 +95,36 @@ export default function ListeningPage() {
     setStage('playing');
     setAudioLoading(true);
 
-    try {
+    const attemptFetch = async (): Promise<{ audioUrl: string }> => {
       const res = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ text: data.passage, cacheId }),
       });
+      if (res.status === 429) {
+        const body = await res.json();
+        throw new Error(body.error || 'Лимит аудио на этот час исчерпан. Попробуй через час.');
+      }
       if (!res.ok) throw new Error('TTS failed');
-      const result = await res.json();
+      return res.json();
+    };
+
+    try {
+      let result: { audioUrl: string };
+      try {
+        result = await attemptFetch();
+      } catch (e: unknown) {
+        if (e instanceof Error && e.message.includes('Лимит')) throw e;
+        // Retry once after 2s for transient errors
+        await new Promise(r => setTimeout(r, 2000));
+        result = await attemptFetch();
+      }
       setAudioUrl(result.audioUrl);
       playUrl(result.audioUrl);
-    } catch (e) {
+    } catch (e: unknown) {
       console.error('TTS error:', e);
-      alert('Не удалось загрузить аудио. Попробуй ещё раз.');
+      const msg = e instanceof Error ? e.message : 'Не удалось загрузить аудио. Попробуй ещё раз.';
+      alert(msg);
       setStage('ready');
     } finally {
       setAudioLoading(false);
