@@ -218,7 +218,7 @@ export default function ListeningPage() {
           </button>
 
           <button
-            onClick={() => profile && loadListening(profile)}
+            onClick={() => loadListening(profile)}
             className="w-full py-3 bg-surface-card border border-surface-border text-gray-400 font-medium rounded-2xl text-sm active:scale-[0.98] transition-transform"
           >
             Другое задание
@@ -376,7 +376,7 @@ export default function ListeningPage() {
           )}
 
           <button
-            onClick={() => profile && loadListening(profile)}
+            onClick={() => loadListening(profile)}
             className="w-full py-4 bg-gold text-surface font-bold rounded-2xl text-base active:scale-[0.98] transition-transform"
           >
             Новое задание
