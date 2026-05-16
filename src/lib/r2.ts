@@ -9,12 +9,12 @@ const r2Client = new S3Client({
   },
 });
 
-export async function uploadAudioToR2(key: string, audioBuffer: ArrayBuffer): Promise<string> {
+export async function uploadAudioToR2(key: string, audioBuffer: ArrayBuffer | Buffer): Promise<string> {
   await r2Client.send(
     new PutObjectCommand({
       Bucket: process.env.R2_BUCKET!,
       Key: key,
-      Body: Buffer.from(audioBuffer),
+      Body: Buffer.isBuffer(audioBuffer) ? audioBuffer : Buffer.from(audioBuffer),
       ContentType: 'audio/mpeg',
     })
   );
