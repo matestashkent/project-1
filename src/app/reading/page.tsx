@@ -5,12 +5,13 @@ import { getProfile, addReadingScore } from '@/lib/storage';
 import { StudentProfile, ReadingPassage } from '@/lib/types';
 import BottomNav from '@/components/BottomNav';
 import { useUser } from '@/lib/userContext';
+import { profileFromDbUser } from '@/lib/profileUtils';
 
 type TFN = 'TRUE' | 'FALSE' | 'NOT GIVEN';
 
 export default function ReadingPage() {
   const router = useRouter();
-  const { token } = useUser();
+  const { user, token, loading: authLoading } = useUser();
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [passage, setPassage] = useState<ReadingPassage | null>(null);
   const [loading, setLoading] = useState(true);
@@ -19,11 +20,13 @@ export default function ReadingPage() {
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
+    if (authLoading) return;
     const p = getProfile();
-    if (!p) { router.replace('/'); return; }
-    setProfile(p);
-    loadPassage(p);
-  }, [router]);
+    const resolved = p || (user ? profileFromDbUser(user) : null);
+    if (!resolved) { router.replace('/'); return; }
+    setProfile(resolved);
+    loadPassage(resolved);
+  }, [authLoading, user, router]);
 
   const loadPassage = async (p: StudentProfile) => {
     setLoading(true);

@@ -6,6 +6,7 @@ import { StudentProfile, WritingFeedback } from '@/lib/types';
 import BottomNav from '@/components/BottomNav';
 import WritingFeedbackDisplay from '@/components/WritingFeedback';
 import { useUser } from '@/lib/userContext';
+import { profileFromDbUser } from '@/lib/profileUtils';
 
 const PROMPTS = [
   "Some people think that technology has made our lives more complicated. Others believe it has made life easier. Discuss both views and give your own opinion.",
@@ -19,7 +20,7 @@ const PROMPTS = [
 
 export default function WritingPage() {
   const router = useRouter();
-  const { token } = useUser();
+  const { user, token, loading: authLoading } = useUser();
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [prompt, setPrompt] = useState('');
   const [essay, setEssay] = useState('');
@@ -27,11 +28,13 @@ export default function WritingPage() {
   const [feedback, setFeedback] = useState<WritingFeedback | null>(null);
 
   useEffect(() => {
+    if (authLoading) return;
     const p = getProfile();
-    if (!p) { router.replace('/'); return; }
-    setProfile(p);
+    const resolved = p || (user ? profileFromDbUser(user) : null);
+    if (!resolved) { router.replace('/'); return; }
+    setProfile(resolved);
     pickPrompt();
-  }, [router]);
+  }, [authLoading, user, router]);
 
   const pickPrompt = () => {
     setPrompt(PROMPTS[Math.floor(Math.random() * PROMPTS.length)]);

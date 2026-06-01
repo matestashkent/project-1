@@ -5,6 +5,7 @@ import { getProfile } from '@/lib/storage';
 import { StudentProfile, SpeakingFeedback } from '@/lib/types';
 import { SPEAKING_CUES, CueCard } from '@/lib/prompts';
 import { useUser } from '@/lib/userContext';
+import { profileFromDbUser } from '@/lib/profileUtils';
 import BottomNav from '@/components/BottomNav';
 import SpeakingFeedbackDisplay from '@/components/SpeakingFeedback';
 
@@ -12,7 +13,7 @@ type Stage = 'cue' | 'prep' | 'recording' | 'reviewing' | 'checking' | 'result';
 
 export default function SpeakingPage() {
   const router = useRouter();
-  const { user, token } = useUser();
+  const { user, token, loading: authLoading } = useUser();
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [cue, setCue] = useState<CueCard | null>(null);
   const [stage, setStage] = useState<Stage>('cue');
@@ -27,16 +28,17 @@ export default function SpeakingPage() {
   const prepTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    if (authLoading) return;
     const p = getProfile();
-    if (!p && !user) { router.replace('/'); return; }
-    setProfile(p);
+    const resolved = p || (user ? profileFromDbUser(user) : null);
+    if (!resolved) { router.replace('/'); return; }
+    setProfile(resolved);
     pickCue();
-    // Check SpeechRecognition support
     if (typeof window !== 'undefined') {
       const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       if (!SR) setSupported(false);
     }
-  }, [router, user]);
+  }, [authLoading, user, router]);
 
   const pickCue = () => {
     setCue(SPEAKING_CUES[Math.floor(Math.random() * SPEAKING_CUES.length)]);

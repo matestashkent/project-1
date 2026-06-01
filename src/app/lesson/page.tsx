@@ -6,6 +6,7 @@ import { StudentProfile, Lesson } from '@/lib/types';
 import BottomNav from '@/components/BottomNav';
 import SocraticChat from '@/components/SocraticChat';
 import { useUser } from '@/lib/userContext';
+import { profileFromDbUser } from '@/lib/profileUtils';
 
 export default function LessonPage() {
   const router = useRouter();
@@ -29,23 +30,7 @@ export default function LessonPage() {
       return;
     }
     if (user) {
-      const fallback: StudentProfile = {
-        name: user.name,
-        language: user.language as StudentProfile['language'],
-        level: user.level as StudentProfile['level'],
-        targetBand: user.targetBand,
-        examIn: user.examIn,
-        studyMinutes: user.studyMinutes,
-        weakAreas: user.weakAreas as StudentProfile['weakAreas'],
-        createdAt: '',
-        lastActive: '',
-        streak: user.streak,
-        lessonsCompleted: user.lessonsCompleted,
-        writingSubmissions: user.writingSubmissions,
-        mockExamsCompleted: user.mockExamsCompleted,
-        writingBands: user.writingBands.map(b => ({ date: typeof b.date === 'string' ? b.date : new Date(b.date).toISOString(), band: b.band })),
-        readingScores: [],
-      };
+      const fallback = profileFromDbUser(user);
       setProfile(fallback);
       loadLesson(fallback);
       return;

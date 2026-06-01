@@ -5,6 +5,7 @@ import { getProfile, addWritingBand } from '@/lib/storage';
 import { StudentProfile, WritingFeedback } from '@/lib/types';
 import { TASK1_TASKS, Task1Data } from '@/lib/prompts';
 import { useUser } from '@/lib/userContext';
+import { profileFromDbUser } from '@/lib/profileUtils';
 import BottomNav from '@/components/BottomNav';
 import WritingFeedbackDisplay from '@/components/WritingFeedback';
 
@@ -60,7 +61,7 @@ const TYPE_TIPS: Record<string, { steps: string[]; vocab: string[]; avoid: strin
 
 export default function Task1Page() {
   const router = useRouter();
-  const { user, token } = useUser();
+  const { user, token, loading: authLoading } = useUser();
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [task, setTask] = useState<Task1Data | null>(null);
   const [response, setResponse] = useState('');
@@ -68,11 +69,13 @@ export default function Task1Page() {
   const [feedback, setFeedback] = useState<WritingFeedback | null>(null);
 
   useEffect(() => {
+    if (authLoading) return;
     const p = getProfile();
-    if (!p && !user) { router.replace('/'); return; }
-    setProfile(p);
+    const resolved = p || (user ? profileFromDbUser(user) : null);
+    if (!resolved) { router.replace('/'); return; }
+    setProfile(resolved);
     pickTask();
-  }, [router, user]);
+  }, [authLoading, user, router]);
 
   const pickTask = () => {
     setTask(TASK1_TASKS[Math.floor(Math.random() * TASK1_TASKS.length)]);
