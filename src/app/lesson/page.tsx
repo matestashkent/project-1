@@ -9,7 +9,7 @@ import { useUser } from '@/lib/userContext';
 
 export default function LessonPage() {
   const router = useRouter();
-  const { token } = useUser();
+  const { user, token, loading: authLoading } = useUser();
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(true);
@@ -21,11 +21,37 @@ export default function LessonPage() {
   const [taskChecking, setTaskChecking] = useState(false);
 
   useEffect(() => {
+    if (authLoading) return;
     const p = getProfile();
-    if (!p) { router.replace('/'); return; }
-    setProfile(p);
-    loadLesson(p);
-  }, [router]);
+    if (p) {
+      setProfile(p);
+      loadLesson(p);
+      return;
+    }
+    if (user) {
+      const fallback: StudentProfile = {
+        name: user.name,
+        language: user.language as StudentProfile['language'],
+        level: user.level as StudentProfile['level'],
+        targetBand: user.targetBand,
+        examIn: user.examIn,
+        studyMinutes: user.studyMinutes,
+        weakAreas: user.weakAreas as StudentProfile['weakAreas'],
+        createdAt: '',
+        lastActive: '',
+        streak: user.streak,
+        lessonsCompleted: user.lessonsCompleted,
+        writingSubmissions: user.writingSubmissions,
+        mockExamsCompleted: user.mockExamsCompleted,
+        writingBands: user.writingBands.map(b => ({ date: typeof b.date === 'string' ? b.date : new Date(b.date).toISOString(), band: b.band })),
+        readingScores: [],
+      };
+      setProfile(fallback);
+      loadLesson(fallback);
+      return;
+    }
+    router.replace('/');
+  }, [authLoading, user, router]);
 
   const checkTaskAnswer = async () => {
     if (!profile || !lesson || !taskAnswer.trim() || taskChecking) return;
