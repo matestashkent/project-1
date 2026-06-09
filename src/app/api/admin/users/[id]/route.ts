@@ -4,21 +4,23 @@ import { checkAdminAuth, adminUnauthorized } from '@/lib/adminAuth';
 
 export const dynamic = 'force-dynamic';
 
-// DELETE /api/admin/users/[id] — delete user
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+type RouteContext = { params: Promise<{ id: string }> };
+
+export async function DELETE(request: NextRequest, context: RouteContext) {
   if (!checkAdminAuth(request)) return adminUnauthorized();
-  await prisma.user.delete({ where: { id: params.id } });
+  const { id } = await context.params;
+  await prisma.user.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }
 
-// POST /api/admin/users/[id] — grant or revoke Pro
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, context: RouteContext) {
   if (!checkAdminAuth(request)) return adminUnauthorized();
+  const { id } = await context.params;
   const { action, days } = await request.json() as { action: 'grant' | 'revoke'; days?: number };
 
   if (action === 'revoke') {
     await prisma.subscription.updateMany({
-      where: { userId: params.id, status: 'active' },
+      where: { userId: id, status: 'active' },
       data: { status: 'cancelled' },
     });
     return NextResponse.json({ ok: true });
@@ -28,11 +30,11 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     const daysToAdd = days || 30;
     const expiresAt = new Date(Date.now() + daysToAdd * 24 * 60 * 60 * 1000);
     await prisma.subscription.updateMany({
-      where: { userId: params.id, status: 'active' },
+      where: { userId: id, status: 'active' },
       data: { status: 'cancelled' },
     });
     await prisma.subscription.create({
-      data: { userId: params.id, plan: 'pro', status: 'active', startedAt: new Date(), expiresAt },
+      data: { userId: id, plan: 'pro', status: 'active', startedAt: new Date(), expiresAt },
     });
     return NextResponse.json({ ok: true });
   }
